@@ -1,0 +1,15 @@
+# Live-ISO greetd: autologin straight into the ewe session as the live user
+# (created at boot by ewe-live-user.service). If the session dies, greetd
+# falls back to agreety on the same VT so the machine is never a black screen.
+# The installed system gets the DE's real greeter config (cage + Quickshell
+# greeter) from /usr/share/ewe/system/greetd instead — this file is live-only.
+[terminal]
+vt = "next"
+
+[initial_session]
+command = "/usr/local/bin/ewe-live-session"
+user = "ewe"
+
+[default_session]
+command = "agreety --cmd /usr/local/bin/ewe-live-session"
+user = "greeter"

@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# Live-session bootstrap, run by greetd as the live user. First boot deploys
+# the DE into the user's home from the packaged payload (a few seconds), then
+# every start hands over to the standard session wrapper — the exact same path
+# an installed system takes.
+set -u
+
+if [ ! -e "$HOME/.local/share/ewe/VERSION" ]; then
+    ewe-setup || exec agreety --cmd bash   # never a black screen
+fi
+exec "$HOME/.local/share/ewe/dotfiles/hypr/start-hyprland.sh"

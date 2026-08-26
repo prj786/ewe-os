@@ -1,0 +1,15 @@
+# Creates the live-session user at boot. Shipping /etc/passwd+group overlays
+# is how ISOs usually do this, but overriding the filesystem package's files
+# rots silently when its defaults change — a oneshot useradd cannot.
+[Unit]
+Description=create the ewe live user
+Before=greetd.service
+ConditionPathExists=!/home/ewe
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/useradd -m -G wheel -s /usr/bin/bash -c "ewe live user" ewe
+ExecStart=/usr/bin/passwd -d ewe
+
+[Install]
+WantedBy=multi-user.target
