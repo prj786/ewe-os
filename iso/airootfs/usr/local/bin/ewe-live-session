@@ -5,7 +5,16 @@
 # an installed system takes.
 set -u
 
+# Live marker: the DE's autostart skips the idle/lock daemon entirely when it
+# sees this — the live user has an empty password, so a lock is a dead end.
+export EWE_LIVE=1
+
 if [ ! -e "$HOME/.local/share/ewe/VERSION" ]; then
     ewe-setup || exec agreety --cmd bash   # never a black screen
+    # pin the installer first in the live launcher/dock (jq ships with the DE)
+    pins="$HOME/.local/share/ewe/dotfiles/quickshell/pinned-apps.json"
+    if [ -w "$pins" ] && command -v jq >/dev/null 2>&1; then
+        jq '["ewe-install.desktop"] + .' "$pins" > "$pins.tmp" && mv "$pins.tmp" "$pins"
+    fi
 fi
 exec "$HOME/.local/share/ewe/dotfiles/hypr/start-hyprland.sh"
