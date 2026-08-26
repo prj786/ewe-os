@@ -131,3 +131,7 @@ zsh
 
 # the ewe desktop (pulls the full DE: Hyprland, Quickshell, Komble, ewe-settings, …)
 ewe
+# explicit so pacstrap settles the libjack provider up front — otherwise a
+# dependency's 'jack' requirement auto-picks jack2, which then conflicts with
+# the pipewire-jack that ewe's own dependency tree brings in
+pipewire-jack
