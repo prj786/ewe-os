@@ -12,17 +12,17 @@ this repo, one milestone per release.
 - [x] live boot → autologin → first-boot deploy → full desktop (QEMU-verified)
 - [x] `ewe-install` written (archinstall + ewe layering) — **untested**
 
-## 0.2-alpha — looks like ewe, installs ewe
+## 0.2-alpha — looks like ewe, installs ewe ✅ (2026-08-27)
 
-- [ ] icon/cursor themes as packages (`reversal-icon-theme`, `mocu-cursor-theme`
+- [x] icon/cursor themes as packages (`reversal-icon-theme`, `mocu-cursor-theme`
       via ewe-repo `pkgbuilds/`) — fixes the pink/black icons on the live ISO
-- [ ] branded boot: menu titles + syslinux art, plymouth `ewe` splash in the
+- [x] branded boot: menu titles + syslinux art, plymouth `ewe` splash in the
       ISO initramfs, splash → greetd handoff (no black gap at first boot)
-- [ ] live session never idle-locks (empty-password user can't unlock)
-- [ ] "Install ewe" entry in the live launcher/dock
-- [ ] `ewe-install` verified end to end in QEMU (disk, UEFI): installed system
+- [x] live session never idle-locks (empty-password user can't unlock)
+- [x] "Install ewe" entry in the live launcher/dock
+- [x] `ewe-install` verified end to end in QEMU (disk, UEFI): installed system
       boots to the greeter with the desktop deployed
-- [ ] BIOS boot path verified (only UEFI tested so far)
+- [x] BIOS boot path verified (only UEFI tested so far)
 
 ## 0.3-alpha — trust and polish
 
