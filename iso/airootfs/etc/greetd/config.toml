@@ -4,7 +4,7 @@
 # The installed system gets the DE's real greeter config (cage + Quickshell
 # greeter) from /usr/share/ewe/system/greetd instead — this file is live-only.
 [terminal]
-vt = "next"
+vt = 2
 
 [initial_session]
 command = "/usr/local/bin/ewe-live-session"
