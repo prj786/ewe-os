@@ -1,4 +1,4 @@
-# Roadmap
+# Roadmap — ewe OS
 
 The distro's version line (the DE keeps its own 0.8.x line). Each release has
 explicit criteria; an ISO ships only after the full checklist in
@@ -24,16 +24,31 @@ this repo, one milestone per release.
       boots to the greeter with the desktop deployed
 - [x] BIOS boot path verified (only UEFI tested so far)
 
-## 0.3-alpha — trust and polish
+## 0.3-alpha — one file
 
-- [ ] repo + package signing (drop `SigLevel = Optional TrustAll`)
-- [ ] ISO built by CI, checksummed, published as a GitHub release
-- [ ] installer UX decision: keep the archinstall wrapper vs. GUI
-      (Calamares or an ewe-settings-style Tauri app)
+The machine becomes one declarative document: `~/.config/ewe/ewe.conf`
+(see [RFC-001](https://github.com/prj786/ewe/blob/main/docs/RFC-001-one-config.md)).
+
+- [ ] `ewe-conf` tool + schema + import/apply (RFC Phase 1)
+- [ ] in-shell Settings writes through `ewe-conf` (Phase 2)
+- [ ] ewe-settings writes through `ewe-conf` (Phase 3)
+- [ ] generators consolidated into `ewe-conf` (Phase 4)
+- [ ] `[system]` split: installer records profiles, gaming/dev lists move here (Phase 5)
 - [ ] wallpapers + default look on the live session
 
-## beta — when someone else can run it
+## 0.4-alpha — connected
 
-- install verified on real hardware (not just QEMU)
-- upgrade path proven across at least two releases (pacman -Syu only)
+- [ ] `ewe-auth` token broker: one Google OAuth for shell + komble + future apps (RFC Phase 6)
+- [ ] `ewe.conf` Drive sync — log in, get your machine back
+- [ ] `[apps.installed]` manifest: komble writes it, restore reinstalls it
+- [ ] repo + package signing (drop `SigLevel = Optional TrustAll`)
+- [ ] ISO built and released by CI (no more laptop-bandwidth uploads)
+
+## 1.0-beta — "Dolly"
+
+Named for the sheep that proved you can clone the whole animal from one cell.
+
+- install + upgrade verified on real hardware (not just QEMU)
+- installer UX decision resolved and shipped
+- restore-from-file demo: fresh install → sign in → your desktop and apps return
 - docs: install guide, troubleshooting, project site

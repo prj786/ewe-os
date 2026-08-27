@@ -1,4 +1,4 @@
-# ewe-distro
+# ewe OS
 
 The distro layer of [ewe](https://github.com/prj786/ewe): the archiso profile
 that builds the **live/install ISO**. The DE, apps, and packaging live in
@@ -41,4 +41,4 @@ uses), and greetd + the live user service are enabled on top.
 | [komble-arch](https://github.com/prj786/komble-arch) | Komble — the software manager |
 | [ewe-settings](https://github.com/prj786/ewe-settings) | the Settings app |
 | [ewe-repo](https://github.com/prj786/ewe-repo) | the `[ewe]` pacman repository |
-| ewe-distro | this — the ISO |
+| ewe-os | this — the ISO |
