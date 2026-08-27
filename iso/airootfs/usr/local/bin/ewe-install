@@ -50,9 +50,12 @@ mountpoint -q "$MNT" || die "target not mounted at $MNT — nothing to layer ont
 say "layering the ewe desktop onto the target"
 
 # 1 · the [ewe] repo, so pacman -Syu keeps updating the DE after install
+# (pipewire-jack is named explicitly for the same reason as the ISO's package
+# list: a dependency's 'jack' requirement would otherwise auto-pick jack2 and
+# conflict with the pipewire-jack inside ewe's own tree)
 grep -q '^\[ewe\]' "$MNT/etc/pacman.conf" \
     || printf "$REPO_STANZA" >> "$MNT/etc/pacman.conf"
-arch-chroot "$MNT" pacman -Sy --noconfirm --needed ewe \
+arch-chroot "$MNT" pacman -Sy --noconfirm --needed pipewire-jack ewe \
     || die "installing the ewe package on the target failed."
 ok "[ewe] repo + ewe package on the target"
 
