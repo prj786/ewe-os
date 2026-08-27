@@ -1,0 +1,61 @@
+# Build the ISO in CI and attach it to the release for the pushed tag.
+# mkarchiso needs loop devices + mounts, which GitHub's `container:` jobs
+# can't grant — so the job drives a --privileged docker run by hand.
+# Assets: the ISO in <2GiB split parts (GitHub caps release assets) plus
+# SHA256SUMS covering the whole and the parts.
+#
+#   cat ewe-*-x86_64.iso.*.part > ewe-<ver>-x86_64.iso
+#   sha256sum -c SHA256SUMS --ignore-missing
+
+name: release-iso
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  iso:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Free runner disk (the ISO build needs ~12G)
+        run: |
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc \
+                      /usr/local/.ghcup /usr/local/share/boost || true
+          df -h / | tail -1
+
+      - name: Build the ISO (mkarchiso in a privileged Arch container)
+        run: |
+          docker run --privileged --rm -v "$PWD:/work" -w /work archlinux:latest \
+            bash -euc '
+              pacman -Syu --noconfirm archiso
+              mkarchiso -v -w /tmp/work -o out iso
+              chmod -R a+r out
+            '
+          ls -lh out/
+
+      - name: Split + checksum
+        run: |
+          cd out
+          iso=$(ls ewe-*-x86_64.iso)
+          sha256sum "$iso" > SHA256SUMS
+          split -b 1900M -d --additional-suffix=.part "$iso" "$iso."
+          sha256sum "$iso".*.part >> SHA256SUMS
+          rm "$iso"
+          ls -lh
+
+      - name: Attach to the release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          tag="${GITHUB_REF_NAME}"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            tag="$(gh release list --limit 1 --json tagName -q '.[0].tagName')"
+          fi
+          gh release view "$tag" >/dev/null 2>&1 || \
+            gh release create "$tag" --title "ewe OS $tag" --generate-notes
+          gh release upload "$tag" out/SHA256SUMS out/*.part --clobber
