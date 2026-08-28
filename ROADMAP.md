@@ -36,14 +36,30 @@ The machine becomes one declarative document: `~/.config/ewe/ewe.conf`
 - [x] `[system]` split: installer records profiles, gaming/dev lists move here (Phase 5)
 - [x] wallpapers + default look (ewe-dark.png shipped, seeded by import)
 
-## 0.4-alpha — connected
+## 0.4-alpha — trust and hygiene ✅ (2026-08-28)
 
-- [ ] `ewe-auth` token broker: one Google OAuth for shell + komble + future apps (RFC Phase 6)
+Re-scoped from the original "connected" plan: 0.4 ships the trust
+infrastructure and the dependency-hygiene work; the sync stack moved to 0.5
+so no release claims what it does not carry.
+
+- [x] repo + package signing end to end (db + packages, ISO keyring,
+      installer key hand-off, SigLevel Required everywhere)
+- [x] ISO built and released by CI (born in a datacenter, split assets)
+- [x] fresh-install gate on every publish: scratch-db resolution + conflict
+      scan + blacklist — the jack2 class of bug cannot ship again
+- [x] package review (ewe 0.9.1): −112 MB, no surprise providers, 766-package
+      clean tree
+- [x] automatic timezone (network-location → timedatectl, live ISO included)
+- [x] DE on the one-file architecture (ewe 0.9.x, RFC-001 phases 1–5)
+
+## 0.5-alpha — connected
+
+- [ ] `ewe-auth` token broker: one Google OAuth for shell + komble + future
+      apps (RFC-001 Phase 6)
 - [ ] `ewe.conf` Drive sync — log in, get your machine back
-- [ ] `[apps.installed]` manifest: komble writes it, restore reinstalls it
-- [x] repo + package signing (packages + db signed; installer verifies)
-- [ ] ISO keyring: the live/build environments still TrustAll — wire ewe.gpg into the ISO keyring
-- [x] ISO built and released by CI (v0.3-alpha's ISO was born in a datacenter)
+- [ ] restore loop: komble reinstalls `[apps.installed]` on a fresh machine
+- [ ] installer UX decision resolved
+- [ ] wallpapers picker default set + greeter avatar branding
 
 ## 1.0-beta — "Dolly"
 
