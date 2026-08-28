@@ -43,7 +43,7 @@ The machine becomes one declarative document: `~/.config/ewe/ewe.conf`
 - [ ] `[apps.installed]` manifest: komble writes it, restore reinstalls it
 - [x] repo + package signing (packages + db signed; installer verifies)
 - [ ] ISO keyring: the live/build environments still TrustAll — wire ewe.gpg into the ISO keyring
-- [ ] ISO built and released by CI (no more laptop-bandwidth uploads)
+- [x] ISO built and released by CI (v0.3-alpha's ISO was born in a datacenter)
 
 ## 1.0-beta — "Dolly"
 
