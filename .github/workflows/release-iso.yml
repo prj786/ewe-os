@@ -39,7 +39,7 @@ jobs:
               pacman-key --add iso/airootfs/usr/share/pacman/keyrings/ewe.gpg
               pacman-key --lsign-key 639CA544B61509B3FC2621ABADBCD432FC0763C1
               mkarchiso -v -w /tmp/work -o out iso
-              chmod -R a+r out
+              chmod -R a+rwX out
             '
           ls -lh out/
 
