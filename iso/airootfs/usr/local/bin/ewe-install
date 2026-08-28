@@ -20,7 +20,7 @@
 set -uo pipefail
 
 MNT=/mnt/archinstall
-REPO_STANZA='\n[ewe]\nSigLevel = Optional TrustAll\nServer = https://github.com/prj786/ewe-repo/releases/download/x86_64\n'
+REPO_STANZA='\n[ewe]\nSigLevel = Required DatabaseRequired\nServer = https://github.com/prj786/ewe-repo/releases/download/x86_64\n'
 
 say() { printf '\033[1;36m::\033[0m %s\n' "$*"; }
 ok()  { printf '\033[1;32mok\033[0m %s\n' "$*"; }
@@ -48,6 +48,13 @@ fi
 mountpoint -q "$MNT" || die "target not mounted at $MNT — nothing to layer onto."
 
 say "layering the ewe desktop onto the target"
+
+# 0 · trust the [ewe] signing key on the target (the repo is signed; without
+# this the very first -Sy fails). Key comes from the live env's own payload.
+install -Dm644 /usr/share/ewe/system/ewe.gpg "$MNT/tmp/ewe.gpg"
+arch-chroot "$MNT" pacman-key --add /tmp/ewe.gpg
+arch-chroot "$MNT" pacman-key --lsign-key 639CA544B61509B3FC2621ABADBCD432FC0763C1
+rm -f "$MNT/tmp/ewe.gpg"
 
 # 1 · the [ewe] repo, so pacman -Syu keeps updating the DE after install
 # (pipewire-jack is named explicitly for the same reason as the ISO's package
