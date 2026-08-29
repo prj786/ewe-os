@@ -61,11 +61,24 @@ so no release claims what it does not carry.
 - [x] installer UX decision resolved: first-party Tauri `ewe-installer` (RFC-003)
 - [ ] wallpapers picker default set + greeter avatar branding
 
-## 1.0-beta — "Dolly"
+## 0.9.x — the beta wave (owner decision, 2026-08-29)
 
-Named for the sheep that proved you can clone the whole animal from one cell.
+The 0.9 family IS the beta channel: releases stay frequent, everything
+ships signed through [ewe], and the word "beta" never has to appear in a
+version string. The wave ends when the Dolly gates are green.
 
-- install + upgrade verified on real hardware (not just QEMU)
-- installer UX decision resolved and shipped
-- restore-from-file demo: fresh install → sign in → your desktop and apps return
-- docs: install guide, troubleshooting, project site
+Dolly gates (each verified, not assumed):
+- [ ] ewe-installer end-to-end in QEMU: six screens → streamed install →
+      reboot → greeter → desktop (btrfs, hibernation, drivers all decided)
+- [ ] install + upgrade verified on real hardware
+- [ ] the "ewe" Google client minted and shipped (dedicated project
+      account); sign-in shows **ewe**, users never see a console
+- [ ] restore demo: fresh install → sign in → your desktop, your apps,
+      your Drive folder return
+- [ ] docs: install guide, troubleshooting, project site
+
+## 1.0.0 — "Dolly" · the release
+
+No suffix, no beta tag — the official ewe OS. Named for the sheep that
+proved you can clone the whole animal from one cell: log in, get your
+machine back.
