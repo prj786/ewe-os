@@ -6,13 +6,11 @@
   import Welcome from "./lib/steps/Welcome.svelte";
   import TimePlace from "./lib/steps/TimePlace.svelte";
   import Disk from "./lib/steps/Disk.svelte";
-  import Filesystem from "./lib/steps/Filesystem.svelte";
-  import Hibernate from "./lib/steps/Hibernate.svelte";
   import User from "./lib/steps/User.svelte";
   import Summary from "./lib/steps/Summary.svelte";
   import Install from "./lib/steps/Install.svelte";
 
-  const COMPONENTS = [Welcome, TimePlace, Disk, Filesystem, Hibernate, User, Summary, Install];
+  const COMPONENTS = [Welcome, TimePlace, Disk, User, Summary, Install];
 
   // per-step gate: can the user proceed?
   $: c = $choices;
@@ -20,8 +18,6 @@
     true,
     c.timezone !== "",
     c.disk !== null,
-    true,
-    true,
     c.username !== "" && c.password.length >= 4,
     true,   // Summary's own button advances
     false,  // Install is terminal

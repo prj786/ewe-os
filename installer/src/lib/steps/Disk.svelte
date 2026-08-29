@@ -8,6 +8,8 @@
     disks = p.disks;
     battery = p.battery;
     if ($choices.hibernate === null) $choices.hibernate = battery;
+    if (disks.length === 1 && !$choices.disk)
+      $choices.disk = { path: disks[0].path, size: disks[0].size, model: disks[0].model };
   });
 </script>
 

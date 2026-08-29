@@ -26,30 +26,39 @@ Why not the alternatives, concretely:
 - Cost check: webkit2gtk (Tauri's engine) is already on the ISO — Komble
   ships it. Marginal weight of a Tauri installer ≈ the app binary itself.
 
-## The steps (one decision per screen, defaults pre-chosen)
+## The product rule (owner decision, 2026-08-29): ewe DECIDES the stack
 
-1. **Welcome / language + keyboard** — layout applies live to the test field.
-2. **Time & place** — auto-detected (the hardened two-provider rule; shown,
-   never silently trusted), editable map-less pickers: region → zone, locale.
-   Writes the same `/etc/ewe/manual-timezone` contract the desktop honours.
-3. **Disk** — pick a disk. Default: **erase disk** (simple mode). Advanced:
-   reuse/keep-home lands post-1.0; dual-boot detection shows what will be
-   destroyed, in red, always.
-4. **Filesystem** — default **btrfs** with `@` / `@home` subvolumes +
-   zstd compression (snapshot-ready for a future rollback story); **ext4**
-   offered as "simple". Both paths produce the same fstab contract.
-5. **Hibernation** — default ON for laptops (battery present): swapfile
-   sized RAM+2G, `nocow` on btrfs, `resume=`/`resume_offset=` wired —
-   exactly phase 32's proven logic, ported.
-6. **User** — name, username, password, avatar (feeds AccountsService, so
-   the greeter shows it on first boot); autologin toggle.
-7. **Summary** — every choice restated in plain words; the only screen with
-   an Install button.
-8. **Install** — streamed progress (pacstrap + the layering we already
-   verified: [ewe] repo + key, ewe package, GPU-by-lspci, greeter stack,
-   per-user `ewe-conf` seed with the timezone/locale/user choices baked into
-   `[system]`).
-9. **Done** — reboot.
+The simplest distro asks no technical questions. Users answer only what is
+personal — keyboard, place, which disk, who they are. Everything else is a
+DECISION, not an option, chosen for speed and stability first:
+
+| decided | answer |
+|---|---|
+| filesystem | btrfs — @/@home subvolumes, zstd (snapshot-ready) |
+| bootloader | systemd-boot |
+| hibernation | automatic: battery present → on (swapfile RAM+2G) |
+| kernel | linux (stock) |
+| GPU drivers | matched to hardware via lspci |
+| audio / network / login | pipewire / NetworkManager / greetd |
+| desktop | ewe |
+
+Free, but premium: no headaches, no menu of ways to hold it wrong. The
+Summary shows the decided stack in a read-only "Decided by ewe" panel so
+the choices are honest, just not negotiable. (Power users have arch — and
+the TUI rescue path.)
+
+## The steps (six screens, all personal)
+
+1. **Welcome** — keyboard layout, live test field.
+2. **Time & place** — auto-detected (two-provider agreement; shown, never
+   silently trusted), zone + locale pickers. Writes the desktop's
+   `/etc/ewe/manual-timezone` contract.
+3. **Disk** — which disk (preselected when there is only one); whole-disk,
+   the erase warning in red here and again on the Summary.
+4. **Your account** — name, username, password, computer name.
+5. **Summary** — personal choices restated + the read-only decided stack;
+   the only screen with an (explicitly red) Install button.
+6. **Install** — streamed progress, then Reboot.
 
 ## Architecture
 

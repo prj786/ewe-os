@@ -8,8 +8,11 @@ export const choices = writable({
   timezone: "",            // filled by the (confirmed) suggestion or the picker
   tzConfident: false,
   disk: null,              // { path, size, model }
-  fs: "btrfs",             // btrfs | ext4
-  hibernate: null,         // null = decide by battery presence at probe time
+  // ── decided by ewe, not asked (the product IS the absence of these
+  // questions): btrfs @/@home+zstd, systemd-boot, swapfile hibernation
+  // on battery machines, stock kernel, drivers by lspci ──
+  fs: "btrfs",
+  hibernate: null,         // auto: battery presence at probe time
   hostname: "ewe",
   realName: "",
   username: "",
@@ -22,8 +25,6 @@ export const STEPS = [
   { key: "welcome", label: "Welcome" },
   { key: "timeplace", label: "Time & place" },
   { key: "disk", label: "Disk" },
-  { key: "filesystem", label: "Filesystem" },
-  { key: "hibernate", label: "Hibernation" },
   { key: "user", label: "Your account" },
   { key: "summary", label: "Summary" },
   { key: "install", label: "Install" },
