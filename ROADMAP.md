@@ -58,7 +58,7 @@ so no release claims what it does not carry.
       apps (RFC-001 Phase 6)
 - [ ] `ewe.conf` Drive sync — log in, get your machine back
 - [ ] restore loop: komble reinstalls `[apps.installed]` on a fresh machine
-- [ ] installer UX decision resolved
+- [x] installer UX decision resolved: first-party Tauri `ewe-installer` (RFC-003)
 - [ ] wallpapers picker default set + greeter avatar branding
 
 ## 1.0-beta — "Dolly"
