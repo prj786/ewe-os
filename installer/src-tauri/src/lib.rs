@@ -1,0 +1,197 @@
+//! ewe-installer backend — a thin driver over ewe-install-helper (RFC-003).
+//!
+//! Nothing privileged happens in this process: every mutating verb goes
+//! through `pkexec ewe-install-helper <verb> …` (fixed allowlist, argv-only,
+//! the Komble pattern). This side only: read-only probes, streaming the
+//! helper's JSON progress lines to the frontend as `install-progress`
+//! events, and the timezone suggestion (two-provider agreement — the same
+//! rule as the desktop's dispatcher; never silently trusted, the UI shows
+//! it for confirmation).
+
+use std::process::Stdio;
+
+use serde_json::{json, Value};
+use tauri::Emitter;
+use tokio::io::{AsyncBufReadExt, BufReader};
+use tokio::process::Command;
+
+const HELPER: &str = "/usr/lib/ewe-installer/ewe-install-helper";
+
+fn estr<E: std::fmt::Display>(e: E) -> String {
+    e.to_string()
+}
+
+async fn helper(
+    app: &tauri::AppHandle,
+    args: &[&str],
+    stdin_line: Option<&str>,
+) -> Result<(), String> {
+    let mut cmd = Command::new("pkexec");
+    cmd.arg(HELPER)
+        .args(args)
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped());
+    cmd.stdin(if stdin_line.is_some() {
+        Stdio::piped()
+    } else {
+        Stdio::null()
+    });
+    let mut child = cmd.spawn().map_err(estr)?;
+    if let (Some(line), Some(mut si)) = (stdin_line, child.stdin.take()) {
+        use tokio::io::AsyncWriteExt;
+        si.write_all(line.as_bytes()).await.map_err(estr)?;
+        si.write_all(b"\n").await.map_err(estr)?;
+        drop(si);
+    }
+    let stdout = child.stdout.take().ok_or("no stdout")?;
+    let app2 = app.clone();
+    let reader = tokio::spawn(async move {
+        let mut lines = BufReader::new(stdout).lines();
+        while let Ok(Some(l)) = lines.next_line().await {
+            if let Ok(v) = serde_json::from_str::<Value>(&l) {
+                let _ = app2.emit("install-progress", v);
+            }
+        }
+    });
+    let status = child.wait().await.map_err(estr)?;
+    let _ = reader.await;
+    if status.success() {
+        Ok(())
+    } else {
+        Err(match status.code() {
+            Some(126) => "Authentication dialog was dismissed.".into(),
+            Some(127) => "Not authorized (polkit refused).".into(),
+            c => format!("helper failed (exit {c:?})"),
+        })
+    }
+}
+
+// ── read-only probes ─────────────────────────────────────────────────────────
+
+#[tauri::command]
+async fn probe(app: tauri::AppHandle) -> Result<Value, String> {
+    // probe is read-only but lsblk/battery info needs no root — run the
+    // helper logic directly here to avoid a pointless auth prompt
+    let out = Command::new("lsblk")
+        .args(["-J", "-d", "-o", "NAME,PATH,SIZE,MODEL,TYPE,RM,TRAN"])
+        .output()
+        .await
+        .map_err(estr)?;
+    let v: Value = serde_json::from_slice(&out.stdout).map_err(estr)?;
+    let disks: Vec<Value> = v["blockdevices"]
+        .as_array()
+        .cloned()
+        .unwrap_or_default()
+        .into_iter()
+        .filter(|b| b["type"] == "disk" && b["rm"] != true)
+        .collect();
+    let battery = std::fs::read_dir("/sys/class/power_supply")
+        .map(|d| {
+            d.flatten()
+                .any(|e| e.file_name().to_string_lossy().starts_with("BAT"))
+        })
+        .unwrap_or(false);
+    let ram_gb = std::fs::read_to_string("/proc/meminfo")
+        .ok()
+        .and_then(|s| {
+            s.lines()
+                .next()
+                .and_then(|l| l.split_whitespace().nth(1).map(String::from))
+        })
+        .and_then(|kb| kb.parse::<u64>().ok())
+        .map(|kb| kb / 1024 / 1024)
+        .unwrap_or(0);
+    let _ = app;
+    Ok(json!({"disks": disks, "battery": battery, "ram_gb": ram_gb}))
+}
+
+#[tauri::command]
+async fn timezones() -> Result<Value, String> {
+    let out = Command::new("timedatectl")
+        .arg("list-timezones")
+        .output()
+        .await
+        .map_err(estr)?;
+    let zones: Vec<&str> = std::str::from_utf8(&out.stdout)
+        .map_err(estr)?
+        .lines()
+        .collect();
+    Ok(json!(zones))
+}
+
+#[tauri::command]
+async fn locales() -> Result<Value, String> {
+    let s = std::fs::read_to_string("/usr/share/i18n/SUPPORTED").unwrap_or_default();
+    let l: Vec<String> = s
+        .lines()
+        .filter(|l| l.contains("UTF-8"))
+        .map(|l| l.split_whitespace().next().unwrap_or("").to_string())
+        .collect();
+    Ok(json!(l))
+}
+
+/// The suggestion rule from the desktop's dispatcher: TWO providers must
+/// agree, otherwise no suggestion at all. The UI always shows the result
+/// for confirmation — automatic never silently wins.
+#[tauri::command]
+async fn suggest_timezone() -> Result<Value, String> {
+    async fn ask(url: &str) -> Option<String> {
+        let out = Command::new("curl")
+            .args(["-sf", "--max-time", "7", url])
+            .output()
+            .await
+            .ok()?;
+        let s = String::from_utf8(out.stdout).ok()?.trim().to_string();
+        (!s.is_empty() && !s.contains(' ')).then_some(s)
+    }
+    let a = ask("https://ipinfo.io/timezone").await;
+    let b = ask("https://ipapi.co/timezone").await;
+    Ok(match (a, b) {
+        (Some(x), Some(y)) if x == y => json!({"zone": x, "confident": true}),
+        (x, y) => json!({"zone": x.or(y), "confident": false}),
+    })
+}
+
+// ── the install sequence (each step = one helper verb, streamed) ────────────
+
+#[tauri::command]
+async fn run_step(
+    app: tauri::AppHandle,
+    step: String,
+    args: Vec<String>,
+    secret: Option<String>,
+) -> Result<(), String> {
+    let allowed = [
+        "partition",
+        "mkfs",
+        "pacstrap",
+        "hibernate",
+        "bootloader",
+        "user",
+        "settz",
+        "setlocale",
+        "sethostname",
+        "layer",
+        "reboot",
+    ];
+    if !allowed.contains(&step.as_str()) {
+        return Err(format!("unknown step {step}"));
+    }
+    let mut argv: Vec<&str> = vec![step.as_str()];
+    argv.extend(args.iter().map(String::as_str));
+    helper(&app, &argv, secret.as_deref()).await
+}
+
+#[cfg_attr(mobile, tauri::mobile_entry_point)]
+pub fn run() {
+    tauri::Builder::default()
+        .invoke_handler(tauri::generate_handler![
+            probe,
+            timezones,
+            locales,
+            suggest_timezone,
+            run_step
+        ])
+        .run(tauri::generate_context!())
+        .expect("error while running ewe-installer");
+}

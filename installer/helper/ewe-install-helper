@@ -1,0 +1,197 @@
+#!/bin/bash
+# ewe-install-helper — the ONLY privileged surface of ewe-installer.
+#
+# polkit authorises this PATH, so the case statement below is the entire
+# definition of what the installer may do as root (the Komble helper
+# pattern). Every verb validates its arguments, prints JSON progress lines
+# ({"phase":..,"msg":..} / {"pct":N}) on stdout, and is individually
+# idempotent enough to re-run after a failure. The TUI path (ewe-install)
+# drives these same verbs — one implementation, two faces.
+#
+# Destructive verbs (partition/mkfs) demand the literal confirmation token
+# ERASE=<disk> as their last argument — a UI bug can never wipe a disk with
+# a bare call.
+set -euo pipefail
+export PATH=/usr/sbin:/usr/bin:/sbin:/bin
+
+MNT=/mnt/ewe-install
+
+die() { printf '{"error":%s}\n' "$(printf '%s' "$*" | python3 -c 'import json,sys;print(json.dumps(sys.stdin.read()))')" >&2; exit 1; }
+say() { printf '{"phase":"%s","msg":"%s"}\n' "$1" "$2"; }
+
+[ "$(id -u)" -eq 0 ] || die "must run as root"
+[ $# -ge 1 ] || die "no verb"
+verb="$1"; shift
+
+valid_disk() { [[ "$1" =~ ^/dev/(sd[a-z]+|nvme[0-9]+n[0-9]+|vd[a-z]+|mmcblk[0-9]+)$ ]] && [ -b "$1" ]; }
+part_of() {  # disk, index -> partition node (nvme/mmc need the p)
+    case "$1" in *[0-9]) echo "$1p$2" ;; *) echo "$1$2" ;; esac
+}
+valid_user() { [[ "$1" =~ ^[a-z_][a-z0-9_-]{0,31}$ ]]; }
+
+case "$verb" in
+
+# ── probe (read-only; the UI may call freely) ────────────────────────────────
+probe)
+    lsblk -J -d -o NAME,PATH,SIZE,MODEL,TYPE,RM,TRAN | python3 -c '
+import json,sys
+d=json.load(sys.stdin)
+disks=[b for b in d["blockdevices"] if b["type"]=="disk" and not b["rm"]]
+print(json.dumps({"disks":disks,
+                  "battery": __import__("glob").glob("/sys/class/power_supply/BAT*") != [],
+                  "ram_gb": round(__import__("os").sysconf("SC_PAGE_SIZE")*__import__("os").sysconf("SC_PHYS_PAGES")/2**30)}))'
+    ;;
+
+# ── partition <disk> <fs:btrfs|ext4> ERASE=<disk> ───────────────────────────
+partition)
+    disk="$1"; fs="$2"; confirm="${3:-}"
+    valid_disk "$disk" || die "not a whole disk: $disk"
+    [ "$confirm" = "ERASE=$disk" ] || die "missing erase confirmation"
+    [ "$fs" = btrfs ] || [ "$fs" = ext4 ] || die "fs must be btrfs or ext4"
+    say partition "wiping $disk"
+    umount -R "$MNT" 2>/dev/null || true
+    wipefs -af "$disk" >/dev/null
+    say partition "GPT: 1G ESP + root"
+    parted -s "$disk" mklabel gpt \
+        mkpart ESP fat32 1MiB 1025MiB set 1 esp on \
+        mkpart root "$fs" 1025MiB 100%
+    udevadm settle
+    say partition "done"
+    ;;
+
+# ── mkfs <disk> <fs> ERASE=<disk> ───────────────────────────────────────────
+mkfs)
+    disk="$1"; fs="$2"; confirm="${3:-}"
+    valid_disk "$disk" || die "not a whole disk: $disk"
+    [ "$confirm" = "ERASE=$disk" ] || die "missing erase confirmation"
+    esp="$(part_of "$disk" 1)"; root="$(part_of "$disk" 2)"
+    say mkfs "ESP: vfat"
+    mkfs.fat -F32 "$esp" >/dev/null
+    if [ "$fs" = btrfs ]; then
+        say mkfs "root: btrfs + @ /@home subvolumes (zstd)"
+        mkfs.btrfs -fq "$root"
+        mount "$root" "$MNT" --mkdir
+        btrfs -q subvolume create "$MNT/@"
+        btrfs -q subvolume create "$MNT/@home"
+        umount "$MNT"
+        mount -o subvol=@,compress=zstd:1,noatime "$root" "$MNT" --mkdir
+        mount -o subvol=@home,compress=zstd:1,noatime "$root" "$MNT/home" --mkdir
+    else
+        say mkfs "root: ext4"
+        mkfs.ext4 -Fq "$root"
+        mount "$root" "$MNT" --mkdir
+    fi
+    mount "$esp" "$MNT/boot" --mkdir
+    say mkfs "mounted at $MNT"
+    ;;
+
+# ── pacstrap ─────────────────────────────────────────────────────────────────
+pacstrap)
+    mountpoint -q "$MNT" || die "target not mounted"
+    say pacstrap "installing the base system (this is the long one)"
+    pacstrap "$MNT" base linux linux-firmware 2>&1 | while IFS= read -r l; do
+        printf '{"phase":"pacstrap","log":%s}\n' "$(printf '%s' "$l" | python3 -c 'import json,sys;print(json.dumps(sys.stdin.read()[:160]))')"
+    done
+    genfstab -U "$MNT" >> "$MNT/etc/fstab"
+    say pacstrap "base installed, fstab written"
+    ;;
+
+# ── hibernate <fs> — phase-32's swapfile + resume wiring, ported ────────────
+hibernate)
+    fs="$1"
+    mountpoint -q "$MNT" || die "target not mounted"
+    ram_kb=$(awk '/MemTotal/{print $2}' /proc/meminfo)
+    size_mb=$(( ram_kb / 1024 + 2048 ))
+    say hibernate "swapfile ${size_mb}MB (RAM+2G)"
+    if [ "$fs" = btrfs ]; then
+        btrfs -q filesystem mkswapfile --size "${size_mb}m" "$MNT/swapfile"
+    else
+        mkswap -q --file "$MNT/swapfile" --size "${size_mb}M" 2>/dev/null || {
+            dd if=/dev/zero of="$MNT/swapfile" bs=1M count="$size_mb" status=none
+            chmod 600 "$MNT/swapfile"; mkswap -q "$MNT/swapfile"
+        }
+    fi
+    printf '/swapfile none swap defaults 0 0\n' >> "$MNT/etc/fstab"
+    root_src=$(findmnt -n -o SOURCE "$MNT")
+    resume_uuid=$(blkid -s UUID -o value "${root_src%%[*}")
+    if [ "$fs" = btrfs ]; then
+        offset=$(btrfs inspect-internal map-swapfile -r "$MNT/swapfile")
+        extra="resume=UUID=$resume_uuid resume_offset=$offset"
+    else
+        offset=$(filefrag -v "$MNT/swapfile" | awk 'NR==4{gsub(/\./,"",$4); print $4}')
+        extra="resume=UUID=$resume_uuid resume_offset=$offset"
+    fi
+    mkdir -p "$MNT/etc/ewe"
+    printf '%s\n' "$extra" > "$MNT/etc/ewe/resume-args"
+    say hibernate "resume args staged: $extra"
+    ;;
+
+# ── bootloader ──────────────────────────────────────────────────────────────
+bootloader)
+    mountpoint -q "$MNT/boot" || die "ESP not mounted"
+    say bootloader "systemd-boot"
+    arch-chroot "$MNT" bootctl install >/dev/null
+    root_src=$(findmnt -n -o SOURCE "$MNT")
+    root_uuid=$(blkid -s UUID -o value "${root_src%%[*}")
+    opts="root=UUID=$root_uuid rw quiet"
+    case "$(findmnt -n -o FSTYPE "$MNT")" in btrfs) opts="$opts rootflags=subvol=@" ;; esac
+    [ -r "$MNT/etc/ewe/resume-args" ] && opts="$opts $(cat "$MNT/etc/ewe/resume-args")"
+    printf 'default ewe.conf\ntimeout 3\n' > "$MNT/boot/loader/loader.conf"
+    printf 'title ewe\nlinux /vmlinuz-linux\ninitrd /initramfs-linux.img\noptions %s\n' \
+        "$opts" > "$MNT/boot/loader/entries/ewe.conf"
+    # resume hook for hibernation
+    if [ -r "$MNT/etc/ewe/resume-args" ]; then
+        sed -i 's/^HOOKS=(\(.*\)filesystems/HOOKS=(\1resume filesystems/' "$MNT/etc/mkinitcpio.conf"
+        arch-chroot "$MNT" mkinitcpio -P >/dev/null 2>&1 || say bootloader "mkinitcpio warnings (non-fatal)"
+    fi
+    say bootloader "done"
+    ;;
+
+# ── user <name> <username> — password arrives on stdin, never in argv ───────
+user)
+    real="$1"; uname="$2"
+    valid_user "$uname" || die "invalid username"
+    say user "creating $uname"
+    arch-chroot "$MNT" useradd -m -G wheel -s /usr/bin/bash -c "$real" "$uname"
+    IFS= read -r pw
+    printf '%s:%s\n' "$uname" "$pw" | arch-chroot "$MNT" chpasswd
+    install -dm750 "$MNT/etc/sudoers.d"
+    printf '%%wheel ALL=(ALL:ALL) ALL\n' > "$MNT/etc/sudoers.d/wheel"
+    say user "done"
+    ;;
+
+# ── settz <zone> / setlocale <locale> / sethostname <name> ──────────────────
+settz)
+    [ -e "/usr/share/zoneinfo/$1" ] || die "unknown zone"
+    ln -sf "/usr/share/zoneinfo/$1" "$MNT/etc/localtime"
+    mkdir -p "$MNT/etc/ewe"; : > "$MNT/etc/ewe/manual-timezone"
+    say settz "$1" ;;
+setlocale)
+    grep -q "^#\?$1 " "$MNT/etc/locale.gen" || die "unknown locale"
+    sed -i "s|^#$1 |$1 |" "$MNT/etc/locale.gen"
+    arch-chroot "$MNT" locale-gen >/dev/null
+    printf 'LANG=%s\n' "$1" > "$MNT/etc/locale.conf"
+    say setlocale "$1" ;;
+sethostname)
+    [[ "$1" =~ ^[a-z0-9-]{1,63}$ ]] || die "invalid hostname"
+    printf '%s\n' "$1" > "$MNT/etc/hostname"
+    say sethostname "$1" ;;
+
+# ── layer — the ewe desktop, exactly the verified ewe-install recipe ────────
+layer)
+    mountpoint -q "$MNT" || die "target not mounted"
+    say layer "delegating to ewe-install --layer-only (the field-tested path)"
+    EWE_INSTALL_MNT="$MNT" /usr/local/bin/ewe-install --layer-only 2>&1 | while IFS= read -r l; do
+        printf '{"phase":"layer","log":%s}\n' "$(printf '%s' "$l" | python3 -c 'import json,sys;print(json.dumps(sys.stdin.read()[:160]))')"
+    done
+    say layer "done"
+    ;;
+
+reboot)
+    say reboot "unmounting and rebooting"
+    umount -R "$MNT" 2>/dev/null || true
+    systemctl reboot
+    ;;
+
+*) die "unknown verb: $verb" ;;
+esac

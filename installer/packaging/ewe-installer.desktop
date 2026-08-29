@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Install ewe
+Comment=Install the ewe desktop onto this machine
+Exec=ewe-installer
+Icon=/usr/share/ewe/system/branding/ewe-logo-dark.png
+Terminal=false
+Type=Application
+Categories=System;
+Keywords=install;installer;disk;setup;

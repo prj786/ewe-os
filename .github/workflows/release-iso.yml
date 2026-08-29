@@ -28,6 +28,16 @@ jobs:
                       /usr/local/.ghcup /usr/local/share/boost || true
           df -h / | tail -1
 
+      - name: Build ewe-installer (Tauri) into the airootfs
+        run: |
+          docker run --rm -v "$PWD:/work" -w /work/installer archlinux:latest \
+            bash -euc '
+              pacman -Syu --noconfirm nodejs npm rust cargo webkit2gtk-4.1 gtk3 base-devel
+              npm ci || npm install
+              npm run tauri build -- --no-bundle
+              install -Dm755 src-tauri/target/release/ewe-installer /work/iso/airootfs/usr/bin/ewe-installer
+            '
+
       - name: Build the ISO (mkarchiso in a privileged Arch container)
         run: |
           docker run --privileged --rm -v "$PWD:/work" -w /work archlinux:latest \

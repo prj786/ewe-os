@@ -19,7 +19,7 @@
 #                              after an interrupted run, or scripted installs)
 set -uo pipefail
 
-MNT=/mnt/archinstall
+MNT="${EWE_INSTALL_MNT:-/mnt/archinstall}"
 REPO_STANZA='\n[ewe]\nSigLevel = Required DatabaseRequired\nServer = https://github.com/prj786/ewe-repo/releases/download/x86_64\n'
 
 say() { printf '\033[1;36m::\033[0m %s\n' "$*"; }

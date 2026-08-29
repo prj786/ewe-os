@@ -1,7 +1,7 @@
 [Desktop Entry]
 Name=Install ewe
 Comment=Install the ewe desktop onto this machine (guided)
-Exec=kitty --title "Install ewe" -e /usr/local/bin/ewe-install
+Exec=sh -c "command -v ewe-installer >/dev/null && exec ewe-installer; exec kitty --title \"Install ewe\" -e /usr/local/bin/ewe-install"
 Icon=/usr/share/ewe/system/branding/ewe-logo-dark.png
 Terminal=false
 Type=Application
