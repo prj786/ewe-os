@@ -66,6 +66,25 @@ arch-chroot "$MNT" pacman -Sy --noconfirm --needed pipewire-jack ewe \
     || die "installing the ewe package on the target failed."
 ok "[ewe] repo + ewe package on the target"
 
+# 1b · GPU drivers for THIS machine's hardware (the ewe package is
+# deliberately vendor-clean — mesa only; shipping every vendor's stack to
+# every machine is bloat, so the right drivers are chosen HERE, mirroring
+# install.sh phase 40). The live kernel sees the same hardware the target
+# will boot on.
+gpus="$(lspci -nn 2>/dev/null | grep -Ei 'vga|3d|display' | tr '[:upper:]' '[:lower:]')"
+gpu_pkgs=""
+case "$gpus" in *intel*) gpu_pkgs="$gpu_pkgs vulkan-intel intel-media-driver vpl-gpu-rt" ;; esac
+case "$gpus" in *\ amd*|*radeon*|*advanced\ micro*) gpu_pkgs="$gpu_pkgs vulkan-radeon libva-mesa-driver" ;; esac
+case "$gpus" in *nvidia*) gpu_pkgs="$gpu_pkgs nvidia-open-dkms nvidia-utils egl-wayland linux-headers" ;; esac
+if [ -n "$gpu_pkgs" ]; then
+    say "GPU driver set for this hardware:$gpu_pkgs"
+    # shellcheck disable=SC2086
+    arch-chroot "$MNT" pacman -S --noconfirm --needed $gpu_pkgs \
+        || echo "!! GPU driver install failed — the desktop still runs on mesa; install them later with Komble."
+else
+    say "no discrete GPU vendor detected — mesa covers it"
+fi
+
 # 2 · the greeter stack — install.sh phase 30's recipe, files from the payload
 P=/usr/share/ewe   # inside the target
 arch-chroot "$MNT" bash -s <<CHROOT || die "greeter setup failed."
