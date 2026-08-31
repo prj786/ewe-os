@@ -119,6 +119,31 @@ async fn timezones() -> Result<Value, String> {
     Ok(json!(zones))
 }
 
+/// The live system's xkb registry — every layout xkeyboard-config ships,
+/// with human names, same as the DE's Settings. base.lst: "! layout"
+/// section, one "  code   Name" line each.
+#[tauri::command]
+async fn keyboard_layouts() -> Result<Value, String> {
+    let text =
+        std::fs::read_to_string("/usr/share/X11/xkb/rules/base.lst").map_err(estr)?;
+    let mut in_layout = false;
+    let mut out: Vec<Value> = Vec::new();
+    for line in text.lines() {
+        let t = line.trim();
+        if let Some(s) = t.strip_prefix('!') {
+            in_layout = s.trim() == "layout";
+            continue;
+        }
+        if !in_layout || t.is_empty() {
+            continue;
+        }
+        if let Some((code, name)) = t.split_once(char::is_whitespace) {
+            out.push(json!({"c": code, "n": name.trim()}));
+        }
+    }
+    Ok(json!(out))
+}
+
 #[tauri::command]
 async fn locales() -> Result<Value, String> {
     let s = std::fs::read_to_string("/usr/share/i18n/SUPPORTED").unwrap_or_default();
@@ -188,6 +213,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             probe,
             timezones,
+            keyboard_layouts,
             locales,
             suggest_timezone,
             run_step

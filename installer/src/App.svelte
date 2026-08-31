@@ -26,22 +26,27 @@
   $: installing = $step === STEPS.length - 1;
 </script>
 
-<div class="flex h-screen select-none bg-zinc-950 text-zinc-100">
-  <!-- rail -->
-  <aside class="flex w-56 flex-col gap-1 border-r border-zinc-800 p-5">
-    <div class="mb-4 flex items-center gap-2">
-      <img src="/usr/share/ewe/system/branding/ewe-logo-dark.png" alt="" class="h-8 w-8 opacity-90"
+<div class="flex h-full">
+  <!-- rail — same shape as ewe-settings' sidebar: Phosphor glyphs, accent on
+       the active row, a check where a decision is already made -->
+  <aside class="flex w-56 shrink-0 flex-col border-r border-zinc-800/60 bg-black/20">
+    <div class="flex items-center gap-2 px-4 pb-2 pt-5">
+      <img src="/usr/share/ewe/system/branding/ewe-logo-dark.png" alt="" class="h-7 w-7 opacity-90"
            onerror={(e) => (e.target.style.display = "none")} />
-      <span class="text-lg font-bold tracking-tight">Install ewe</span>
+      <span class="text-sm font-semibold">Install ewe</span>
     </div>
-    {#each STEPS as s, i}
-      <div class="flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm
-                  {i === $step ? 'bg-zinc-800 text-white' : i < $step ? 'text-zinc-400' : 'text-zinc-600'}">
-        <span class="w-4 text-center text-xs {i < $step ? 'text-[var(--accent,#0a84ff)]' : ''}">{i < $step ? "\u2713" : i === $step ? "\u203a" : "\u00b7"}</span>
-        {s.label}
-      </div>
-    {/each}
-    <div class="mt-auto text-xs text-zinc-600">alpha — every choice is shown again before anything touches a disk</div>
+    <nav class="flex-1 space-y-0.5 px-2 py-2">
+      {#each STEPS as s, i}
+        <div class="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-sm transition-colors
+                    {i === $step ? 'text-white' : i < $step ? 'text-zinc-400' : 'text-zinc-600'}"
+             style={i === $step ? "background: color-mix(in srgb, var(--accent) 22%, transparent)" : ""}>
+          <span class="ph-i w-4 shrink-0 text-center text-[16px]"
+                style={i < $step ? "color: var(--accent)" : ""}>{String.fromCodePoint(i < $step ? 0xe182 : s.icon)}</span>
+          <span class="min-w-0 flex-1 truncate">{s.label}</span>
+        </div>
+      {/each}
+    </nav>
+    <div class="px-4 pb-4 text-xs text-zinc-600">alpha — every choice is shown again before anything touches a disk</div>
   </aside>
 
   <!-- step -->
@@ -50,12 +55,10 @@
       <svelte:component this={COMPONENTS[$step]} />
     </div>
     {#if !installing}
-      <div class="flex items-center justify-between border-t border-zinc-800 px-8 py-4">
-        <button class="rounded-lg px-4 py-2 text-sm text-zinc-400 hover:bg-zinc-900 disabled:opacity-30"
-                disabled={$step === 0} onclick={() => step.update((n) => n - 1)}>Back</button>
+      <div class="flex items-center justify-between border-t border-zinc-800/60 px-8 py-4">
+        <button class="btn-ghost" disabled={$step === 0} onclick={() => step.update((n) => n - 1)}>Back</button>
         {#if $step < STEPS.length - 2}
-          <button class="rounded-lg bg-[var(--accent,#0a84ff)] px-5 py-2 text-sm font-medium text-white disabled:opacity-30"
-                  disabled={!canNext} onclick={() => step.update((n) => n + 1)}>Next</button>
+          <button class="btn-primary px-5" disabled={!canNext} onclick={() => step.update((n) => n + 1)}>Next</button>
         {/if}
       </div>
     {/if}

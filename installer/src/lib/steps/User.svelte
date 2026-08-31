@@ -10,14 +10,14 @@
 <p class="mb-6 text-sm text-zinc-400">The first user is an administrator (sudo via password).</p>
 
 <label class="mb-1 block text-sm text-zinc-300" for="rn">Your name</label>
-<input id="rn" class="mb-3 w-72 rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm"
+<input id="rn" class="input mb-3 w-72"
        bind:value={$choices.realName} placeholder="Dolly Sheep" />
 <label class="mb-1 block text-sm text-zinc-300" for="un">Username</label>
-<input id="un" class="mb-3 w-72 rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm"
+<input id="un" class="input mb-3 w-72"
        bind:value={$choices.username} oninput={() => (touched = true)} placeholder="dolly" />
 <label class="mb-1 block text-sm text-zinc-300" for="pw">Password</label>
-<input id="pw" type="password" class="mb-3 w-72 rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm"
+<input id="pw" type="password" class="input mb-3 w-72"
        bind:value={$choices.password} placeholder="at least 4 characters" />
 <label class="mb-1 block text-sm text-zinc-300" for="hn">Computer name</label>
-<input id="hn" class="w-72 rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm"
+<input id="hn" class="input w-72"
        bind:value={$choices.hostname} />

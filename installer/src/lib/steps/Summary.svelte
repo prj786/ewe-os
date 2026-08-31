@@ -14,7 +14,7 @@
   <div class="flex justify-between border-b border-zinc-800 pb-2"><span class="text-zinc-500">Account</span><span>{c.realName} ({c.username}) on “{c.hostname}”</span></div>
 </div>
 
-<div class="mt-6 max-w-xl rounded-xl border border-zinc-800 bg-zinc-900/50 p-4">
+<div class="card mt-6 max-w-xl p-4">
   <div class="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-500">Decided by ewe — nothing to configure</div>
   <div class="grid grid-cols-2 gap-x-6 gap-y-1 text-xs text-zinc-400">
     <span>Filesystem</span><span class="text-zinc-300">btrfs · compressed · snapshot-ready</span>

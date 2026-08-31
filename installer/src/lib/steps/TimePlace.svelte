@@ -25,14 +25,14 @@
 <p class="mb-6 text-sm text-zinc-400">{note || "Pick your timezone and language."}</p>
 
 <label class="mb-1 block text-sm text-zinc-300" for="tz">Timezone</label>
-<select id="tz" class="mb-4 w-96 rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100"
+<select id="tz" class="input mb-4 w-96"
         bind:value={$choices.timezone}>
   <option value="" disabled>choose…</option>
   {#each zones as z}<option value={z}>{z}</option>{/each}
 </select>
 
 <label class="mb-1 block text-sm text-zinc-300" for="loc">Language / locale</label>
-<select id="loc" class="w-96 rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100"
+<select id="loc" class="input w-96"
         bind:value={$choices.locale}>
   {#each locales as l}<option value={l}>{l}</option>{/each}
 </select>

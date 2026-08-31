@@ -21,11 +21,12 @@ export const choices = writable({
 
 export const step = writable(0);
 
+// icon: Phosphor-Fill codepoints — the DE's one icon language
 export const STEPS = [
-  { key: "welcome", label: "Welcome" },
-  { key: "timeplace", label: "Time & place" },
-  { key: "disk", label: "Disk" },
-  { key: "user", label: "Your account" },
-  { key: "summary", label: "Summary" },
-  { key: "install", label: "Install" },
+  { key: "welcome", label: "Welcome", icon: 0xe580 },
+  { key: "timeplace", label: "Time & place", icon: 0xe28c },
+  { key: "disk", label: "Disk", icon: 0xe2a0 },
+  { key: "user", label: "Your account", icon: 0xe4c4 },
+  { key: "summary", label: "Summary", icon: 0xeadc },
+  { key: "install", label: "Install", icon: 0xe20c },
 ];

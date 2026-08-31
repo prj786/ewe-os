@@ -36,9 +36,9 @@
     "targets": [
       "appimage"
     ],
-    "category": "Settings",
-    "shortDescription": "Settings for the ewe desktop",
-    "longDescription": "The settings application for the ewe desktop: appearance, displays, input, power and startup. Writes the same configuration files the shell reads and asks it to reload.",
+    "category": "Utility",
+    "shortDescription": "Install the ewe desktop",
+    "longDescription": "The ewe OS installer: six screens, one decision each, streamed install. Lives only on the live ISO — the installed system never carries it.",
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",

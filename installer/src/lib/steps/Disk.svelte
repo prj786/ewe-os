@@ -18,7 +18,7 @@
 
 {#each disks as d}
   <button class="mb-2 flex w-full max-w-xl items-center justify-between rounded-xl border px-4 py-3 text-left
-                 {$choices.disk?.path === d.path ? 'border-[var(--accent,#0a84ff)] bg-zinc-900' : 'border-zinc-800 hover:bg-zinc-900'}"
+                 {$choices.disk?.path === d.path ? 'border-[var(--accent)] bg-zinc-800/60' : 'border-zinc-700/60 hover:bg-zinc-800/60'}"
           onclick={() => ($choices.disk = { path: d.path, size: d.size, model: d.model })}>
     <div>
       <div class="text-sm font-medium">{d.model || d.path}</div>
