@@ -8,7 +8,9 @@ bcachefs-tools
 bind
 bolt
 brltty
-broadcom-wl
+# broadcom-wl — DROPPED from the Arch repos 2026-08; only the -dkms variant
+# remains, and a dkms compile has no place on a live ISO (b43-fwcutter above
+# still covers the b43 class; wl-chip owners install broadcom-wl-dkms later)
 btrfs-progs
 clonezilla
 cloud-init
