@@ -3,8 +3,12 @@
 # falls back to agreety on the same VT so the machine is never a black screen.
 # The installed system gets the DE's real greeter config (cage + Quickshell
 # greeter) from /usr/share/ewe/system/greetd instead — this file is live-only.
+# vt 1, not 2: headless QEMU testing caught the machine sitting on a BLACK
+# tty1 while the session ran on tty2 — nothing ever activated VT2. VT1 is
+# plymouth's VT, so taking it over is also the seamless-handoff path; the
+# greetd drop-in conflicts getty@tty1 and the rescue console lives on tty3.
 [terminal]
-vt = 2
+vt = 1
 
 [initial_session]
 command = "/usr/local/bin/ewe-live-session"
