@@ -110,6 +110,54 @@ systemctl enable greetd.service NetworkManager.service bluetooth.service \
 CHROOT
 ok "greeter (greetd → cage → Quickshell greeter) + core services enabled"
 
+# 2b · CPU microcode for this machine (mirrors install.sh phase 37); the
+# mkinitcpio `microcode` hook picks it up on the rebuild below
+case "$(grep -m1 vendor_id /proc/cpuinfo 2>/dev/null)" in
+    *GenuineIntel*) ucode=intel-ucode ;;
+    *AuthenticAMD*) ucode=amd-ucode ;;
+    *)              ucode="" ;;
+esac
+if [ -n "$ucode" ]; then
+    arch-chroot "$MNT" pacman -S --noconfirm --needed "$ucode" \
+        && ok "CPU microcode: $ucode" \
+        || echo "!! $ucode install failed — boot works without it, install later."
+fi
+
+# 2c · branded, silent boot — the Ubuntu/Fedora treatment (phase 35's recipe):
+# the ewe plymouth theme from the payload, the plymouth hook AFTER kms (the
+# DRM driver must be up before plymouthd or the splash falls back to the
+# framebuffer), and an os-release that says ewe, not Arch — this machine
+# introduces itself as ewe everywhere (bootloader titles, GRUB probes, apps).
+arch-chroot "$MNT" bash -s <<CHROOT || die "boot branding failed."
+set -euo pipefail
+dst=/usr/share/plymouth/themes/ewe
+install -d "\$dst"
+# stock spinner frames + our watermark/colours — same trick as phase 35
+[ -d /usr/share/plymouth/themes/spinner ] && cp -f /usr/share/plymouth/themes/spinner/*.png "\$dst"/
+install -m 644 $P/system/plymouth/ewe/watermark.png "\$dst/watermark.png"
+install -m 644 $P/system/plymouth/ewe/ewe.plymouth  "\$dst/ewe.plymouth"
+install -d /etc/plymouth
+printf '[Daemon]\nTheme=ewe\nShowDelay=0\n' > /etc/plymouth/plymouthd.conf
+if ! grep -qE '^HOOKS=.*\bplymouth\b' /etc/mkinitcpio.conf; then
+    sed -i -E 's/^(HOOKS=\(.*\bkms)\b/\1 plymouth/' /etc/mkinitcpio.conf
+    grep -qE '^HOOKS=.*\bplymouth\b' /etc/mkinitcpio.conf \
+        || sed -i -E 's/^(HOOKS=\(.*\budev)\b/\1 plymouth/' /etc/mkinitcpio.conf
+fi
+cat > /etc/os-release <<'OSREL'
+NAME="ewe"
+PRETTY_NAME="ewe"
+ID=ewe
+ID_LIKE=arch
+BUILD_ID=rolling
+ANSI_COLOR="38;2;10;132;255"
+HOME_URL="https://github.com/prj786/ewe"
+BUG_REPORT_URL="https://github.com/prj786/ewe/issues"
+LOGO=ewe
+OSREL
+mkinitcpio -P >/dev/null 2>&1 || echo "!! mkinitcpio warnings (non-fatal)"
+CHROOT
+ok "branded silent boot: ewe splash + microcode + ewe os-release"
+
 # 3 · per-user deploy + session entry for every human account archinstall made
 found_user=0
 for home in "$MNT"/home/*; do

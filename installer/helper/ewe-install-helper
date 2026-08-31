@@ -133,10 +133,15 @@ bootloader)
     arch-chroot "$MNT" bootctl install >/dev/null
     root_src=$(findmnt -n -o SOURCE "$MNT")
     root_uuid=$(blkid -s UUID -o value "${root_src%%[*}")
-    opts="root=UUID=$root_uuid rw quiet"
+    # phase 35's full quiet set + splash: kernel warnings stay below the ewe
+    # plymouth splash, no [ OK ] lines, no blinking cursor — Ubuntu-grade.
+    quiet="quiet splash loglevel=3 rd.udev.log_level=3 udev.log_level=3 systemd.show_status=auto rd.systemd.show_status=auto vt.global_cursor_default=0"
+    opts="root=UUID=$root_uuid rw $quiet"
     case "$(findmnt -n -o FSTYPE "$MNT")" in btrfs) opts="$opts rootflags=subvol=@" ;; esac
     [ -r "$MNT/etc/ewe/resume-args" ] && opts="$opts $(cat "$MNT/etc/ewe/resume-args")"
-    printf 'default ewe.conf\ntimeout 3\n' > "$MNT/boot/loader/loader.conf"
+    # timeout 0 = no menu on a normal boot (hold Space for it), like every
+    # polished distro; editor no keeps the cmdline out of curious hands
+    printf 'default ewe.conf\ntimeout 0\neditor no\nconsole-mode keep\n' > "$MNT/boot/loader/loader.conf"
     printf 'title ewe\nlinux /vmlinuz-linux\ninitrd /initramfs-linux.img\noptions %s\n' \
         "$opts" > "$MNT/boot/loader/entries/ewe.conf"
     # resume hook for hibernation
