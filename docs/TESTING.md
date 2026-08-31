@@ -11,9 +11,14 @@ silently reuses a stale work dir).
 | UEFI | `./run-iso.sh` (OVMF) | boot menu → live desktop |
 | BIOS | `./run-iso.sh --bios` | same |
 
-Headless (no window, screenshots over QMP): use `-device virtio-vga`, **not**
-`virtio-gpu-pci` — its screendump reads solid black even while the guest
-renders. `scripts/` has the QMP screendump helper from the 0.1 bring-up.
+Headless (no window, screenshots over QMP): `scripts/vm.sh` — boots the
+newest `testing/*.iso`/`out/*.iso` with a QMP socket, a qemu-guest-agent
+channel (root shell into the live system: `vm.sh ga <cmd…>`), and a
+persistent 40G blank target disk. `vm.sh shot` screendumps to PNG,
+`vm.sh key`/`type` synthesise input, `vm.sh reboot-disk` boots the
+installed disk for the post-install verification pass. It uses
+`-device virtio-vga`, **not** `virtio-gpu-pci` — gpu-pci's screendump
+reads solid black even while the guest renders.
 
 ## Live session
 
@@ -24,7 +29,8 @@ renders. `scripts/` has the QMP screendump helper from the 0.1 bring-up.
 - [ ] network up (NetworkManager); Komble opens and loads the AM catalog
 - [ ] `sudo pacman -Syu` resolves against `[ewe]` without errors
 - [ ] leave idle 12+ min: session must NOT lock
-- [ ] tty1 root rescue console reachable (Ctrl+Alt+F1)
+- [ ] tty3 root rescue console reachable (Ctrl+Alt+F3; tty1 stays blank —
+      it belongs to the plymouth→greeter handoff)
 
 ## Install path
 

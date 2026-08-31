@@ -52,10 +52,27 @@ so no release claims what it does not carry.
 - [x] automatic timezone (network-location → timedatectl, live ISO included)
 - [x] DE on the one-file architecture (ewe 0.9.x, RFC-001 phases 1–5)
 
+## 0.4.1-alpha — looks premium ✅ (2026-09-01)
+
+The polish wave between "trusted" and "connected": the OS stops looking
+like a themed Arch and starts looking finished.
+
+- [x] boot chain fully branded: ewe plymouth on the INSTALLED system (the
+      Arch-logo bgrt fallback is gone), full quiet cmdline, hidden
+      systemd-boot menu, microcode, `os-release` says ewe (ID_LIKE=arch)
+- [x] ISO branding leaks closed: GRUB/loopback entries, speech entry,
+      tty1 root-prompt flash (rescue console → tty3)
+- [x] ewe-installer wears the family design system (dark tokens, Phosphor
+      rail, .input/.card, full xkb layout registry) — first ISO to carry it
+- [x] installed systems never carry the installer (verified: it lives only
+      in the live squashfs)
+- [x] DE 0.9.6: Control Center polish, Zed replaces Fresh, Time & Place
+      pane, full keyboard registry, Drive mount + updates-count fixes
+
 ## 0.5-alpha — connected
 
-- [ ] `ewe-auth` token broker: one Google OAuth for shell + komble + future
-      apps (RFC-001 Phase 6)
+- [x] `ewe-auth` token broker: one Google OAuth for shell + komble + future
+      apps (RFC-001 Phase 6 — shipped in DE 0.9.x, verified e2e 2026-08-29)
 - [ ] `ewe.conf` Drive sync — log in, get your machine back
 - [ ] restore loop: komble reinstalls `[apps.installed]` on a fresh machine
 - [x] installer UX decision resolved: first-party Tauri `ewe-installer` (RFC-003)
