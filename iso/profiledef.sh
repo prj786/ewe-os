@@ -27,5 +27,6 @@ file_permissions=(
   ["/usr/local/bin/ewe-install"]="0:0:755"
   ["/etc/sudoers.d/g_ewe-live"]="0:0:440"
   ["/usr/lib/ewe-installer/ewe-install-helper"]="0:0:755"
+  ["/usr/bin/ewe-installer"]="0:0:755"
   ["/etc/NetworkManager/dispatcher.d/60-ewe-auto-timezone"]="0:0:755"
 )
