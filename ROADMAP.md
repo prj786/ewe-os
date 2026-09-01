@@ -135,8 +135,11 @@ install, so metal only has to answer the questions only metal can.
 - [x] VM-test findings of 2026-09-01 fixed at the root: focus-not-relaunch
       for Settings/Komble, Drive mounted from the one sign-in, wallpaper
       previews from /usr/share, Komble live theme, WebKit DMA-BUF guard in VMs
-- [ ] upgrade path verified in QEMU: install from the previous ISO →
-      `pacman -Syu` from [ewe] → reboot → desktop (scripts/vm.sh-driven)
+- [x] upgrade path VERIFIED in QEMU (2026-09-01): 0.6.2 ISO → archinstall +
+      ewe-install --layer-only → 0.9.9 desktop → ONE `pacman -Syu` →
+      reboot → 0.9.14 desktop with the Welcome flow. Found+fixed on the
+      way: the signing key staged in $MNT/tmp evaporated under
+      arch-chroot's tmpfs
 - [ ] restore demo verified in QEMU: fresh install → welcome → sign in →
       restore → your desktop, your apps, your Drive folder return
 - [ ] docs: install guide + troubleshooting for the ISO path (the DE's
