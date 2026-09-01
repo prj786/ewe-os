@@ -131,6 +131,11 @@ Dolly gates (each verified, not assumed):
       installed system booted ewe-splash → greeter → desktop, no Arch
       anywhere. Four ISO bugs found and fixed in the run.
 - [ ] install + upgrade verified on real hardware
+- [x] cast field test (Gate C): ewe-castd vs a real Samsung — TEN field
+      fixes across one day (WFD IE, CBP, portal tokens, bind-port, RTCP,
+      M4 dialect, ssrc/RTP-Info, TS PIDs 0x1011/0x1100, DMA-BUF stride →
+      vapostproc, NM profile sweep) — 1080p30 streaming verified
+      2026-09-01; gnd remains only as `cast legacy`
 - [ ] the "ewe" Google client minted and shipped (dedicated project
       account); sign-in shows **ewe**, users never see a console
 - [ ] restore demo: fresh install → sign in → your desktop, your apps,
