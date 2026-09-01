@@ -5,6 +5,7 @@
 #
 #   scripts/vm.sh up [iso]        boot newest testing/*.iso|out/*.iso (UEFI) + blank target disk
 #   scripts/vm.sh up --bios [iso] legacy boot (syslinux path)
+#   scripts/vm.sh up --gui [iso]  same, but with a visible window + sound (human test drive)
 #   scripts/vm.sh shot [name]     QMP screendump → /tmp/ewe-vm/<name>.png
 #   scripts/vm.sh key <keys…>     QMP send-key (e.g. `key ret`, `key ctrl-alt-f3`)
 #   scripts/vm.sh type <text>     type a string via send-key
@@ -88,10 +89,15 @@ boot() { # boot <cdrom-args...>
         firmware=(-drive "if=pflash,format=raw,readonly=on,file=$ovmf"
                   -drive "if=pflash,format=raw,file=$WORK/OVMF_VARS.fd")
     fi
+    # --gui: a visible window + sound for a human at the keyboard; the QMP/GA
+    # sockets stay up either way, so shot/key/ga keep working alongside it
+    local display=(-display none)
+    [ "${GUI:-0}" = 1 ] && display=(-display gtk,gl=on
+        -audiodev pipewire,id=snd0 -device intel-hda -device hda-output,audiodev=snd0)
     qemu-system-x86_64 \
         -enable-kvm -m 6G -smp 4 -cpu host \
         "${firmware[@]}" \
-        -device virtio-vga -display none \
+        -device virtio-vga "${display[@]}" \
         -qmp "unix:$QMP,server=on,wait=off" \
         -chardev "socket,path=$GA,server=on,wait=off,id=qga0" \
         -device virtio-serial -device virtserialport,chardev=qga0,name=org.qemu.guest_agent.0 \
@@ -105,13 +111,17 @@ boot() { # boot <cdrom-args...>
 
 case "${1:-status}" in
 up)
-    shift; [ "${1:-}" = "--bios" ] && { BIOS=1; shift; }
+    shift
+    while [ "${1:-}" = "--bios" ] || [ "${1:-}" = "--gui" ]; do
+        [ "$1" = "--bios" ] && BIOS=1; [ "$1" = "--gui" ] && GUI=1; shift
+    done
     iso="${1:-$(ls -t testing/*.iso out/*.iso 2>/dev/null | head -1)}"
     [ -n "$iso" ] && [ -r "$iso" ] || { echo "no ISO found (testing/ or out/)" >&2; exit 1; }
     echo "booting $iso"
     boot -cdrom "$iso" -boot d
     ;;
 reboot-disk)
+    [ "${2:-}" = "--gui" ] && GUI=1
     boot -boot c
     ;;
 shot)
@@ -191,7 +201,7 @@ wipe)
     rm -f "$DISK" && echo "target disk wiped"
     ;;
 *)
-    echo "usage: vm.sh up [--bios] [iso] | reboot-disk | shot [name] | key <k…> | type <text> | ga <cmd…> | status | down | wipe" >&2
+    echo "usage: vm.sh up [--bios|--gui] [iso] | reboot-disk [--gui] | shot [name] | key <k…> | type <text> | ga <cmd…> | status | down | wipe" >&2
     exit 1
     ;;
 esac
