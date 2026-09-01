@@ -79,9 +79,11 @@ like a themed Arch and starts looking finished.
 - [x] restore loop plumbing fixed (2026-09-01): the For-you pane renders,
       pull applies + reloads, the manifest survives the first restored
       install (union + explicit forget)
-- [ ] first-login restore flow — a fresh machine that signs in gets ASKED
-      "restore this machine?" (today the user must find Settings → Account)
-- [ ] sync test coverage (push/pull/conflict — zero tests exist)
+- [x] first-login restore flow (2026-09-01): a never-synced machine that
+      finds a Drive backup at sign-in gets a notification + a pre-armed
+      Settings → Account restore card
+- [x] sync test coverage (2026-09-01): tests/ewe-conf-sync-test.sh — mock
+      Drive, every RFC-002 branch (manifest, conflict, --force, .bak)
 - [ ] wallpapers picker default set + greeter avatar branding
 - [x] installer UX decision resolved: first-party Tauri `ewe-installer` (RFC-003)
 
