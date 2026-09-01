@@ -29,6 +29,7 @@ efibootmgr
 espeakup
 ethtool
 exfatprogs
+fuse2
 f2fs-tools
 fatresize
 foot-terminfo

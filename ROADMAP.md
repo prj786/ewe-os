@@ -120,8 +120,12 @@ ships signed through [ewe], and the word "beta" never has to appear in a
 version string. The wave ends when the Dolly gates are green.
 
 Dolly gates (each verified, not assumed):
-- [ ] ewe-installer end-to-end in QEMU: six screens → streamed install →
-      reboot → greeter → desktop (btrfs, hibernation, drivers all decided)
+- [x] ewe-installer end-to-end in QEMU: six screens → streamed install →
+      reboot → greeter → desktop (btrfs, hibernation, drivers all decided) —
+      **verified 2026-09-01** via scripts/vm.sh: v0.4.1 ISO booted silent to
+      VT1, GUI installer drove Asia/Tbilisi + Scubba onto a blank disk,
+      installed system booted ewe-splash → greeter → desktop, no Arch
+      anywhere. Four ISO bugs found and fixed in the run.
 - [ ] install + upgrade verified on real hardware
 - [ ] the "ewe" Google client minted and shipped (dedicated project
       account); sign-in shows **ewe**, users never see a console

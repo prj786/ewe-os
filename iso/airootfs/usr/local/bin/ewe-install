@@ -62,7 +62,7 @@ rm -f "$MNT/tmp/ewe.gpg"
 # conflict with the pipewire-jack inside ewe's own tree)
 grep -q '^\[ewe\]' "$MNT/etc/pacman.conf" \
     || printf "$REPO_STANZA" >> "$MNT/etc/pacman.conf"
-arch-chroot "$MNT" pacman -Sy --noconfirm --needed pipewire-jack ewe \
+arch-chroot "$MNT" pacman -Sy --noconfirm --needed pipewire-jack fuse2 ewe \
     || die "installing the ewe package on the target failed."
 ok "[ewe] repo + ewe package on the target"
 
