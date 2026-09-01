@@ -51,10 +51,13 @@ say "layering the ewe desktop onto the target"
 
 # 0 · trust the [ewe] signing key on the target (the repo is signed; without
 # this the very first -Sy fails). Key comes from the live env's own payload.
-install -Dm644 /usr/share/ewe/system/ewe.gpg "$MNT/tmp/ewe.gpg"
-arch-chroot "$MNT" pacman-key --add /tmp/ewe.gpg
+# NOT $MNT/tmp: arch-chroot mounts a fresh tmpfs over the target's /tmp, so a
+# key staged there is gone by the time pacman-key looks (found by the 0.8
+# upgrade-path test, 2026-09-01). /root survives the chroot.
+install -Dm644 /usr/share/ewe/system/ewe.gpg "$MNT/root/ewe.gpg"
+arch-chroot "$MNT" pacman-key --add /root/ewe.gpg
 arch-chroot "$MNT" pacman-key --lsign-key 639CA544B61509B3FC2621ABADBCD432FC0763C1
-rm -f "$MNT/tmp/ewe.gpg"
+rm -f "$MNT/root/ewe.gpg"
 
 # 1 · the [ewe] repo, so pacman -Syu keeps updating the DE after install
 # (pipewire-jack is named explicitly for the same reason as the ISO's package
