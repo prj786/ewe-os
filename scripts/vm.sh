@@ -80,8 +80,13 @@ boot() { # boot <cdrom-args...>
     local firmware=()
     if [ "${BIOS:-0}" != 1 ]; then
         local ovmf=/usr/share/edk2/x64/OVMF_CODE.4m.fd
-        [ -r "$ovmf" ] || ovmf=/usr/share/edk2-ovmf/x64/OVMF_CODE.fd
-        firmware=(-drive "if=pflash,format=raw,readonly=on,file=$ovmf")
+        local vars_src=/usr/share/edk2/x64/OVMF_VARS.4m.fd
+        [ -r "$ovmf" ] || { ovmf=/usr/share/edk2-ovmf/x64/OVMF_CODE.fd; vars_src=/usr/share/edk2-ovmf/x64/OVMF_VARS.fd; }
+        # writable NVRAM: without it bootctl's boot entry evaporates between
+        # boots and the firmware drops into its boot-device menu
+        [ -f "$WORK/OVMF_VARS.fd" ] || cp "$vars_src" "$WORK/OVMF_VARS.fd"
+        firmware=(-drive "if=pflash,format=raw,readonly=on,file=$ovmf"
+                  -drive "if=pflash,format=raw,file=$WORK/OVMF_VARS.fd")
     fi
     qemu-system-x86_64 \
         -enable-kvm -m 6G -smp 4 -cpu host \

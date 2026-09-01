@@ -73,10 +73,45 @@ like a themed Arch and starts looking finished.
 
 - [x] `ewe-auth` token broker: one Google OAuth for shell + komble + future
       apps (RFC-001 Phase 6 — shipped in DE 0.9.x, verified e2e 2026-08-29)
-- [ ] `ewe.conf` Drive sync — log in, get your machine back
-- [ ] restore loop: komble reinstalls `[apps.installed]` on a fresh machine
-- [x] installer UX decision resolved: first-party Tauri `ewe-installer` (RFC-003)
+- [x] `ewe.conf` Drive sync engine hardened (2026-09-01): conflict guard
+      (newest-wins, never silently clobber another machine), machine-name
+      manifest, real hash gate, ONE auto-sync switch
+- [x] restore loop plumbing fixed (2026-09-01): the For-you pane renders,
+      pull applies + reloads, the manifest survives the first restored
+      install (union + explicit forget)
+- [ ] first-login restore flow — a fresh machine that signs in gets ASKED
+      "restore this machine?" (today the user must find Settings → Account)
+- [ ] sync test coverage (push/pull/conflict — zero tests exist)
 - [ ] wallpapers picker default set + greeter avatar branding
+- [x] installer UX decision resolved: first-party Tauri `ewe-installer` (RFC-003)
+
+## 0.6-alpha — one file, whole machine
+
+RFC-001 Phase 4's residue plus the reserved domains — after this, ewe.conf
+really is the machine:
+
+- [ ] `[desktop.input]`: keyboard layouts/variants, repeat, touchpad —
+      input.lua generation moves into ewe-conf, deleted from both UIs
+- [ ] user.lua + hypridle.conf generators follow the same road
+- [ ] `[desktop.keybinds]`: user keybind overrides in the file
+- [ ] `[network.ssh]` + `[network.vpn]`: host/profile DEFINITIONS sync,
+      credentials never (decided 2026-09-01, docs/EWE-CONF.md)
+- [ ] AppImage restore becomes a real reinstall (today: a pointer to Discover)
+- [ ] retire the in-shell "Packages from backup…" surface (komble owns apps)
+
+## 0.7-alpha — the first-run wave
+
+What a stranger sees in their first ten minutes:
+
+- [ ] first-boot welcome flow on a fresh install (account sign-in offer →
+      restore offer → tour of Super/dock/Komble)
+- [ ] installed-system splash→greeter handoff goes seamless (greetd vt=1 —
+      PROVEN on the live ISO 2026-09-01; port behind a real-hardware test)
+- [ ] live-ISO first-boot gap: plymouth covers the ewe-setup deploy pause
+- [ ] Time & Place: locale/language picker (pane exists, locale is missing)
+- [ ] decide light mode's fate (parked since 0.8.x) — ship it or delete it
+
+## 0.9.x — the beta wave (owner decision, 2026-08-29)
 
 ## 0.9.x — the beta wave (owner decision, 2026-08-29)
 
