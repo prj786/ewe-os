@@ -13,6 +13,9 @@ if [ ! -e "$HOME/.local/share/ewe/VERSION" ]; then
     ewe-setup || exec agreety --cmd bash   # never a black screen
     # pin the installer first in the live launcher/dock (jq ships with the DE)
     pins="$HOME/.local/share/ewe/dotfiles/quickshell/pinned-apps.json"
+    # the runtime file is seeded from .default only at first shell start —
+    # at this point it does not exist yet, so [ -w ] skipped the pin forever
+    [ -e "$pins" ] || { [ -r "$pins.default" ] && cp "$pins.default" "$pins"; }
     if [ -w "$pins" ] && command -v jq >/dev/null 2>&1; then
         jq '["ewe-install.desktop"] + .' "$pins" > "$pins.tmp" && mv "$pins.tmp" "$pins"
     fi

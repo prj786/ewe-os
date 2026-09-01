@@ -91,6 +91,7 @@ boot() { # boot <cdrom-args...>
         -chardev "socket,path=$GA,server=on,wait=off,id=qga0" \
         -device virtio-serial -device virtserialport,chardev=qga0,name=org.qemu.guest_agent.0 \
         -device virtio-net-pci,netdev=n0 -netdev user,id=n0 \
+        -device qemu-xhci -device usb-tablet \
         -drive "file=$DISK,if=virtio,format=qcow2" \
         -pidfile "$PIDF" -daemonize \
         "$@"
@@ -121,6 +122,32 @@ key)
         qmp "{\"execute\":\"send-key\",\"arguments\":{\"keys\":$keys}}" >/dev/null
         sleep 0.1
     done
+    ;;
+click) # click <x> <y> — absolute pixel coords on the guest framebuffer
+    # (needs the usb-tablet the boot args add — rel mice can't teleport)
+    x="$2"; y="$3"
+    # abs axes are scaled 0..32767 over the display size; probe via screendump
+    qmp "{\"execute\":\"screendump\",\"arguments\":{\"filename\":\"$WORK/.probe.png\",\"format\":\"png\"}}" >/dev/null
+    dims=$(python3 - "$WORK/.probe.png" <<'PY'
+import struct, sys
+try:
+    with open(sys.argv[1], 'rb') as f:
+        f.read(16)
+        w, h = struct.unpack('>II', f.read(8))
+    print(w, h)
+except Exception:
+    print(1280, 800)
+PY
+)
+    read -r W H <<<"$dims"
+    ax=$(( x * 32767 / W )); ay=$(( y * 32767 / H ))
+    qmp "{\"execute\":\"input-send-event\",\"arguments\":{\"events\":[
+        {\"type\":\"abs\",\"data\":{\"axis\":\"x\",\"value\":$ax}},
+        {\"type\":\"abs\",\"data\":{\"axis\":\"y\",\"value\":$ay}}]}}" >/dev/null
+    qmp "{\"execute\":\"input-send-event\",\"arguments\":{\"events\":[
+        {\"type\":\"btn\",\"data\":{\"button\":\"left\",\"down\":true}}]}}" >/dev/null
+    qmp "{\"execute\":\"input-send-event\",\"arguments\":{\"events\":[
+        {\"type\":\"btn\",\"data\":{\"button\":\"left\",\"down\":false}}]}}" >/dev/null
     ;;
 type)
     shift
