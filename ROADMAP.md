@@ -115,8 +115,6 @@ What a stranger sees in their first ten minutes:
 
 ## 0.9.x — the beta wave (owner decision, 2026-08-29)
 
-## 0.9.x — the beta wave (owner decision, 2026-08-29)
-
 The 0.9 family IS the beta channel: releases stay frequent, everything
 ships signed through [ewe], and the word "beta" never has to appear in a
 version string. The wave ends when the Dolly gates are green.
