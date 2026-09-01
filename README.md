@@ -4,8 +4,9 @@ The distro layer of [ewe](https://github.com/prj786/ewe): the archiso profile
 that builds the **live/install ISO**. The DE, apps, and packaging live in
 their own repos — this one turns them into a bootable distribution.
 
-**Version: 0.1-alpha.** The distro has its own version line; the DE stays on
-its 0.8.x line. The ISO pins nothing — it preconfigures the
+**Version:** the `VERSION` file (the distro has its own line; the DE's
+`ewe` package has another). **Install guide: [docs/INSTALL.md](docs/INSTALL.md)
+· problems: [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md).** The ISO pins nothing — it preconfigures the
 [\[ewe\] pacman repo](https://github.com/prj786/ewe-repo) so both the live
 session and installed systems roll forward with plain `pacman -Syu`.
 
