@@ -149,6 +149,9 @@ bootloader)
         sed -i 's/^HOOKS=(\(.*\)filesystems/HOOKS=(\1resume filesystems/' "$MNT/etc/mkinitcpio.conf"
         arch-chroot "$MNT" mkinitcpio -P >/dev/null 2>&1 || say bootloader "mkinitcpio warnings (non-fatal)"
     fi
+    # dirty FAT buffers + an unclean VM/power stop = zero-length loader files;
+    # flushing costs nothing and closes the class
+    sync
     say bootloader "done"
     ;;
 

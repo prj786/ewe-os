@@ -175,7 +175,16 @@ status)
     running && echo "running (pid $(cat "$PIDF"))" || echo "not running"
     ;;
 down)
-    running && kill "$(cat "$PIDF")" && echo "stopped" || echo "not running"
+    # graceful first: a SIGTERM'd guest never flushes its dirty FAT buffers —
+    # that once zero-lengthed a freshly-installed ESP's loader files
+    if running; then
+        qmp '{"execute":"system_powerdown"}' >/dev/null 2>&1 || true
+        for _ in $(seq 1 20); do running || break; sleep 0.5; done
+        running && kill "$(cat "$PIDF")"
+        echo "stopped"
+    else
+        echo "not running"
+    fi
     ;;
 wipe)
     running && { echo "vm.sh down first" >&2; exit 1; }
