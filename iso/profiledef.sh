@@ -24,6 +24,7 @@ file_permissions=(
   ["/usr/local/bin/Installation_guide"]="0:0:755"
   ["/usr/local/bin/livecd-sound"]="0:0:755"
   ["/usr/local/bin/ewe-live-session"]="0:0:755"
+  ["/usr/local/bin/ewe-live-deploy"]="0:0:755"
   ["/usr/local/bin/ewe-install"]="0:0:755"
   ["/etc/sudoers.d/g_ewe-live"]="0:0:440"
   ["/usr/lib/ewe-installer/ewe-install-helper"]="0:0:755"

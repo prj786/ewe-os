@@ -105,17 +105,44 @@ live goldens and locked in by the test suite.
 - [x] AppImage restore reinstalls through the real release path
 - [x] the in-shell "Packages from backup…" side-channel retired
 
-## 0.7-alpha — the first-run wave
+## 0.7-alpha — the first-run wave ✅ (2026-09-01)
 
 What a stranger sees in their first ten minutes:
 
-- [ ] first-boot welcome flow on a fresh install (account sign-in offer →
-      restore offer → tour of Super/dock/Komble)
-- [ ] installed-system splash→greeter handoff goes seamless (greetd vt=1 —
-      PROVEN on the live ISO 2026-09-01; port behind a real-hardware test)
-- [ ] live-ISO first-boot gap: plymouth covers the ewe-setup deploy pause
-- [ ] Time & Place: locale/language picker (pane exists, locale is missing)
-- [ ] decide light mode's fate (parked since 0.8.x) — ship it or delete it
+- [x] first-boot welcome flow on a fresh install (2026-09-01): Welcome.qml —
+      welcome → one sign-in (Drive scope included) → restore offer when the
+      account holds a backup → sixty-second tour; once per install, never on
+      the live ISO; `qs ipc call welcome toggle` to revisit
+- [x] installed-system splash→greeter handoff goes seamless (2026-09-01):
+      greetd vt=1 + getty@tty1 conflict ported to system/greetd, rescue
+      console on tty3, the ISO installer now also lays down the drop-in
+      (it never did) — real-hardware confirmation still owed
+- [x] live-ISO first-boot gap (2026-09-01): ewe-live-deploy runs from
+      ewe-live-user.service Before=plymouth-quit, so the splash covers the
+      deploy; the session script only has the never-black-screen fallback
+- [x] Time & Place: language/locale picker (2026-09-01) — SUPPORTED list
+      with human labels, locale-gen + localectl behind one pkexec prompt
+- [x] light mode deleted — ewe is dark-only by decision (2026-09-01)
+
+## 0.8-alpha — ready for metal
+
+Everything that can be proven in QEMU before the first real-hardware
+install, so metal only has to answer the questions only metal can.
+
+- [x] CI asserts the ewe PACKAGE CONTENTS (oauth-client.json with a real
+      client_id, shell, start script, greetd config, wallpapers, the four
+      bin tools) — the 2026-09-01 "Not configured" lesson, encoded
+- [x] VM-test findings of 2026-09-01 fixed at the root: focus-not-relaunch
+      for Settings/Komble, Drive mounted from the one sign-in, wallpaper
+      previews from /usr/share, Komble live theme, WebKit DMA-BUF guard in VMs
+- [ ] upgrade path verified in QEMU: install from the previous ISO →
+      `pacman -Syu` from [ewe] → reboot → desktop (scripts/vm.sh-driven)
+- [ ] restore demo verified in QEMU: fresh install → welcome → sign in →
+      restore → your desktop, your apps, your Drive folder return
+- [ ] docs: install guide + troubleshooting for the ISO path (the DE's
+      docs/ cover the get.sh path today)
+- [ ] the "ewe" Google client moved to a dedicated project account
+      (owner action — the client itself already ships in every package)
 
 ## 0.9.x — the beta wave (owner decision, 2026-08-29)
 

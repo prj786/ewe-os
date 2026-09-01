@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+# First-boot deploy for the live session — run AS THE LIVE USER, from two
+# places, so the desktop is on disk before anyone looks at the screen:
+#
+#   1. ewe-live-user.service at boot, under the plymouth splash (the normal
+#      path since 2026-09-01: the splash stays up until this returns, so the
+#      few-second `ewe-setup` copy is invisible instead of a black screen
+#      between plymouth ending and Hyprland appearing);
+#   2. ewe-live-session, as a fallback, if (1) did not happen — never a black
+#      screen, whatever went wrong at boot.
+#
+# Idempotent: a deployed home (VERSION present) is a no-op, so the fallback
+# costs nothing on a healthy boot.
+set -u
+
+DEST="${EWE_HOME:-$HOME/.local/share/ewe}"
+[ -e "$DEST/VERSION" ] && exit 0
+
+ewe-setup || exit 1
+
+# pin the installer first in the live launcher/dock (jq ships with the DE)
+pins="$DEST/dotfiles/quickshell/pinned-apps.json"
+# the runtime file is seeded from .default only at first shell start —
+# at this point it does not exist yet, so [ -w ] skipped the pin forever
+[ -e "$pins" ] || { [ -r "$pins.default" ] && cp "$pins.default" "$pins"; }
+if [ -w "$pins" ] && command -v jq >/dev/null 2>&1; then
+    jq '["ewe-install.desktop"] + .' "$pins" > "$pins.tmp" && mv "$pins.tmp" "$pins"
+fi
+exit 0

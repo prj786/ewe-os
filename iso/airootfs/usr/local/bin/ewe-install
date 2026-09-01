@@ -105,7 +105,13 @@ install -m 644 $P/system/greeter/shell.qml /etc/xdg/quickshell/ewe-greeter/shell
 chmod 755 /usr/local/bin/ewe-greeter
 [ -f /usr/lib/security/pam_gnome_keyring.so ] && install -m 644 $P/system/pam.d/greetd /etc/pam.d/greetd
 install -m 755 $P/system/bin/ewe-share-picker /usr/local/bin/ewe-share-picker
-systemctl enable greetd.service NetworkManager.service bluetooth.service \
+# greetd drop-in (phase 35's): ordered after plymouth-quit-wait, the
+# black-screen guard, and — since 2026-09-01, config.toml vt = 1 — the
+# getty@tty1 conflict that makes splash → greeter one seamless cut (the
+# design this very ISO proved). Rescue console on tty3, as on the ISO.
+install -d /etc/systemd/system/greetd.service.d
+install -m 644 $P/system/greetd/plymouth.conf /etc/systemd/system/greetd.service.d/plymouth.conf
+systemctl enable greetd.service getty@tty3.service NetworkManager.service bluetooth.service \
     power-profiles-daemon.service systemd-timesyncd.service avahi-daemon.service
 CHROOT
 ok "greeter (greetd → cage → Quickshell greeter) + core services enabled"

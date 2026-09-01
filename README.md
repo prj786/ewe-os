@@ -13,8 +13,9 @@ session and installed systems roll forward with plain `pacman -Syu`.
 
 - **Live session** — boots through greetd straight into a full ewe desktop
   (autologin as the `ewe` live user; the DE deploys itself on first start via
-  `ewe-setup` from the preinstalled `ewe` package). A root rescue console
-  stays on tty1.
+  `ewe-setup` from the preinstalled `ewe` package, at boot, under the
+  plymouth splash). A root rescue console lives on tty3 (Ctrl+Alt+F3);
+  tty1 belongs to the greeter.
 - **`ewe-install`** — guided disk install: archinstall handles disks, locale,
   users and bootloader; the wrapper then layers the `[ewe]` repo, the `ewe`
   package, the greeter stack (greetd → cage → Quickshell greeter), and the

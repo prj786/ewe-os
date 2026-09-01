@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
-# Live-session bootstrap, run by greetd as the live user. First boot deploys
-# the DE into the user's home from the packaged payload (a few seconds), then
-# every start hands over to the standard session wrapper — the exact same path
-# an installed system takes.
+# Live-session bootstrap, run by greetd as the live user. The DE was already
+# deployed into this home at boot by ewe-live-user.service, under the plymouth
+# splash (see ewe-live-deploy) — so normally this is a thin exec of the
+# standard session wrapper, the exact same path an installed system takes.
+# If that boot-time deploy did not happen, do it here: never a black screen.
 set -u
 
 # Live marker: the DE's autostart skips the idle/lock daemon entirely when it
@@ -10,14 +11,6 @@ set -u
 export EWE_LIVE=1
 
 if [ ! -e "$HOME/.local/share/ewe/VERSION" ]; then
-    ewe-setup || exec agreety --cmd bash   # never a black screen
-    # pin the installer first in the live launcher/dock (jq ships with the DE)
-    pins="$HOME/.local/share/ewe/dotfiles/quickshell/pinned-apps.json"
-    # the runtime file is seeded from .default only at first shell start —
-    # at this point it does not exist yet, so [ -w ] skipped the pin forever
-    [ -e "$pins" ] || { [ -r "$pins.default" ] && cp "$pins.default" "$pins"; }
-    if [ -w "$pins" ] && command -v jq >/dev/null 2>&1; then
-        jq '["ewe-install.desktop"] + .' "$pins" > "$pins.tmp" && mv "$pins.tmp" "$pins"
-    fi
+    /usr/local/bin/ewe-live-deploy || exec agreety --cmd bash   # never a black screen
 fi
 exec "$HOME/.local/share/ewe/dotfiles/hypr/start-hyprland.sh"

@@ -1,15 +1,53 @@
-# Creates the live-session user at boot. Shipping /etc/passwd+group overlays
-# is how ISOs usually do this, but overriding the filesystem package's files
-# rots silently when its defaults change — a oneshot useradd cannot.
+# Creates the live-session user at boot, then deploys the desktop into its
+# home while the plymouth splash is still on screen.
+#
+# Shipping /etc/passwd+group overlays is how ISOs usually do this, but
+# overriding the filesystem package's files rots silently when its defaults
+# change — a oneshot useradd cannot.
+#
+# ── the deploy moved here from ewe-live-session (2026-09-01) ────────────────
+# `ewe-setup` copies the DE payload into ~/.local/share/ewe and links
+# ~/.config — a few seconds. Done from the greetd session (the old way) those
+# seconds were a black screen between the splash ending and Hyprland's first
+# frame. Done here, ordered BEFORE plymouth-quit, they happen under the splash.
+#
+# Ordering reasoning:
+#   • plymouth-quit.service (Arch's stock unit) is a oneshot pulled in by
+#     multi-user.target with only `After=rc-local plymouth-start
+#     systemd-user-sessions` — no Before= of its own, and default deps
+#     (After=basic.target) that this unit shares — so putting ourselves
+#     Before= it creates no cycle. plymouth-quit-wait (`plymouth --wait`,
+#     which returns only once plymouthd is gone) is likewise only After=
+#     those three, and greetd's drop-in is After= both. The resulting chain is
+#         ewe-live-user → plymouth-quit → plymouth-quit-wait → greetd
+#     i.e. the splash cannot be told to quit until the deploy has returned.
+#   • Before=greetd.service stays as belt-and-braces (greetd's live-user.conf
+#     drop-in also Wants=/After= this unit) so a plymouth-less boot
+#     (`plymouth.enable=0`, or the units missing) still deploys before login.
+#   • Type=oneshot has NO start timeout by default — a wedged deploy would hold
+#     the splash forever. TimeoutStartSec caps it: on expiry the unit fails,
+#     plymouth quits, greetd starts, and ewe-live-session's fallback re-runs
+#     the (idempotent) deploy on a visible screen instead. greetd only Wants=
+#     this unit, so a failure here never blocks the login path.
 [Unit]
-Description=create the ewe live user
+Description=create the ewe live user and deploy the desktop into its home
 Before=greetd.service
+Before=plymouth-quit.service plymouth-quit-wait.service
 ConditionPathExists=!/home/ewe
 
 [Service]
 Type=oneshot
+TimeoutStartSec=120
 ExecStart=/usr/bin/useradd -m -G wheel -s /usr/bin/bash -c "ewe live user" ewe
 ExecStart=/usr/bin/passwd -d ewe
+# As the live user, not root: ewe-setup refuses uid 0 and everything it writes
+# must be owned by `ewe`. runuser (no -m) resets HOME/USER/LOGNAME/SHELL from
+# passwd; the explicit XDG dirs are what ewe-setup/deploy.sh/colorscheme.sh
+# read, and there is deliberately no session bus here (the same headless
+# conditions ewe-install already runs ewe-setup under in the target chroot —
+# gsettings/`systemctl --user` calls inside are best-effort no-ops).
+Environment=XDG_CONFIG_HOME=/home/ewe/.config XDG_CACHE_HOME=/home/ewe/.cache XDG_DATA_HOME=/home/ewe/.local/share
+ExecStart=/usr/bin/runuser -u ewe -- /usr/local/bin/ewe-live-deploy
 
 [Install]
 WantedBy=multi-user.target
