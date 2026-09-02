@@ -36,6 +36,10 @@ jobs:
               npm ci || npm install
               npm run tauri build -- --no-bundle
               install -Dm755 src-tauri/target/release/ewe-installer /work/iso/airootfs/usr/bin/ewe-installer
+              # the privileged helper has ONE source: installer/helper. A committed
+              # copy in the airootfs drifted and shipped without the `upgrade`
+              # verb (ISO 0.8.1-alpha, caught in QEMU 2026-09-02).
+              install -Dm755 helper/ewe-install-helper /work/iso/airootfs/usr/lib/ewe-installer/ewe-install-helper
             '
 
       - name: Build the ISO (mkarchiso in a privileged Arch container)

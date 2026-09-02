@@ -13,6 +13,9 @@ command -v mkarchiso >/dev/null 2>&1 || { echo "xx install the 'archiso' package
 
 if [ "${1:-}" = "clean" ]; then rm -rf work; echo "ok work/ removed"; exit 0; fi
 
+# the privileged installer helper has one source (installer/helper); it is
+# installed into the airootfs at build time, never committed there
+install -Dm755 installer/helper/ewe-install-helper iso/airootfs/usr/lib/ewe-installer/ewe-install-helper
 mkarchiso -v -w work -o out iso
 echo
 ls -lh out/*.iso | tail -1

@@ -1,3 +1,6 @@
 /work*/
 /out/
 testing/
+
+# built from installer/helper at build time (build.sh / release-iso.yml)
+iso/airootfs/usr/lib/ewe-installer/ewe-install-helper
