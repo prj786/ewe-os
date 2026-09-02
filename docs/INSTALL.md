@@ -37,21 +37,28 @@ see is the real thing: try the Control Center (Super + N), Komble, the
 settings. Nothing is written to your disks until you press the red Install
 button on the Summary screen.
 
-## 3 · Install — six screens
+## 3 · Install — seven screens
 
 1. **Welcome** — keyboard layout, with a field to try it.
-2. **Time & place** — your zone is detected (two providers must agree;
+2. **Network** — the install downloads the whole system, so this screen
+   waits for a connection: a cable just works, Wi-Fi is joined right here
+   (pick the network, type the password). Nothing past this screen opens
+   until NetworkManager reports full connectivity.
+3. **Time & place** — your zone is detected (two providers must agree;
    you always see what was chosen), plus a language/locale picker.
-3. **Disk** — pick the disk. **The whole disk is erased**; the warning is
+4. **Disk** — pick the disk. **The whole disk is erased**; the warning is
    red here and again on the Summary.
-4. **Your account** — name, username, password, computer name.
-5. **Summary** — everything you chose, the *Decided by ewe* panel, and the
+5. **Your account** — name, username, password, computer name.
+6. **Summary** — everything you chose, the *Decided by ewe* panel, and the
    only Install button.
-6. **Install** — streamed progress, then **Reboot**. Remove the stick when
-   the screen goes dark.
+7. **Install** — a last connectivity check, then streamed progress, then
+   **Reboot**. Remove the stick when the screen goes dark. If a step
+   fails, the screen says why and offers **Retry** (the disk is
+   partitioned again from scratch) or **Back**.
 
 The installed machine boots through the ewe splash into the graphical
-greeter. The first login opens the **Welcome** flow: sign in with Google
+greeter. The first login opens the **Welcome** flow: connect to the
+internet (Wi-Fi is joined from the flow itself), sign in with Google
 (optional, one consent for calendar, mail, sync, Drive), restore a backup
 if your account has one from another ewe machine, and a sixty-second tour.
 

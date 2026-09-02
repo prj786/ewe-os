@@ -18,12 +18,27 @@ DEST="${EWE_HOME:-$HOME/.local/share/ewe}"
 
 ewe-setup || exit 1
 
-# pin the installer first in the live launcher/dock (jq ships with the DE)
-pins="$DEST/dotfiles/quickshell/pinned-apps.json"
-# the runtime file is seeded from .default only at first shell start —
-# at this point it does not exist yet, so [ -w ] skipped the pin forever
-[ -e "$pins" ] || { [ -r "$pins.default" ] && cp "$pins.default" "$pins"; }
-if [ -w "$pins" ] && command -v jq >/dev/null 2>&1; then
-    jq '["ewe-install.desktop"] + .' "$pins" > "$pins.tmp" && mv "$pins.tmp" "$pins"
+# The live session is for installing: the installer is pinned first in the
+# dock/launcher AND is the one startup app (the seeded default starts Komble,
+# which is right on an installed machine and wrong here — 2026-09-02).
+# Both go through ewe-conf so the one file and its generated JSON agree; the
+# raw-jq path below is only the fallback for a payload without ewe-conf.
+conf="$DEST/bin/ewe-conf"
+qs="$DEST/dotfiles/quickshell"
+startup='[{"name":"Install ewe","exec":"gtk-launch ewe-install || ewe-installer","icon":"/usr/share/ewe/system/branding/ewe-logo-dark.png","enabled":true}]'
+if [ -x "$conf" ] && command -v jq >/dev/null 2>&1; then
+    pinned="$("$conf" get apps.pinned 2>/dev/null || echo '[]')"
+    pinned="$(printf '%s' "$pinned" | jq -c '["ewe-install.desktop"] + (. - ["ewe-install.desktop"])' 2>/dev/null || echo '["ewe-install.desktop"]')"
+    "$conf" set --no-hooks apps.pinned "$pinned" >/dev/null 2>&1 \
+        || echo "!! ewe-conf set apps.pinned failed" >&2
+    "$conf" set --no-hooks apps.startup "$startup" >/dev/null 2>&1 \
+        || echo "!! ewe-conf set apps.startup failed" >&2
+else
+    pins="$qs/pinned-apps.json"
+    [ -e "$pins" ] || { [ -r "$pins.default" ] && cp "$pins.default" "$pins"; }
+    if [ -w "$pins" ] && command -v jq >/dev/null 2>&1; then
+        jq '["ewe-install.desktop"] + .' "$pins" > "$pins.tmp" && mv "$pins.tmp" "$pins"
+    fi
+    printf '{"apps":%s}\n' "$startup" > "$qs/startup-apps.json"
 fi
 exit 0

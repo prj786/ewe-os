@@ -146,6 +146,10 @@ install, so metal only has to answer the questions only metal can.
       docs/ cover the get.sh path today)
 - [ ] the "ewe" Google client moved to a dedicated project account
       (owner action — the client itself already ships in every package)
+- [ ] first bare-metal install 2026-09-02: six field bugs (restore, sync
+      identity, keyring/sign-in, offline installer, no Wi-Fi step in
+      Welcome/installer, signed AUR builds) — fixes in DE 0.9.16-x hotfixes
+      + installer Network step; metal re-test owed
 
 ## 0.9.x — the beta wave (owner decision, 2026-08-29)
 

@@ -39,14 +39,25 @@ it runs. This one is for the ISO, the installer and the first boots.
 - **"No disk"** — the disk list shows whole disks only. An NVMe drive
   appears as `nvme0n1`; USB sticks (including the one you booted) are
   hidden. Check `lsblk` on tty3.
+- **Next is greyed out on the Network screen** — the installer refuses to
+  continue until NetworkManager reports *full* connectivity. Join a Wi-Fi
+  network from the list (passwords are 8+ characters), or plug in a cable.
+  "Connected, but no internet" means the link is up and the route is not:
+  a captive portal (open a browser from the dock, sign in, come back) or a
+  router without uplink. `nmcli device` and `nmcli networking connectivity`
+  on tty3 show what the installer sees.
 - **Time & place shows the wrong city** — the two location providers
   disagreed or the network was down. Pick the zone by hand; the choice is
   saved as manual (`/etc/ewe/manual-timezone`) and can be changed later in
   Settings → Time & Place.
-- **Install stops during "pacstrap"** — a network problem or a mirror
-  hiccup. Check connectivity (Control Center → Wi-Fi), then run the
-  installer again; partitions are recreated from scratch, nothing is left
-  half-done.
+- **"Lost the connection — go back to Network"** — the last check before
+  the disk is touched failed. Nothing was erased; reconnect and press
+  Install again.
+- **"pacstrap failed" / "the ewe layer failed"** — the download died
+  mid-install (network, a mirror, the `[ewe]` repo). The message is the
+  helper's own; the log above it has the last lines from pacman. Press
+  **Retry**: the disk is partitioned again from scratch, nothing is left
+  half-done. **Back** returns to the Summary.
 - **"Erase" confirmation** — there is no dual-boot mode. The chosen disk is
   wiped entirely. Keep other disks unplugged if in doubt.
 

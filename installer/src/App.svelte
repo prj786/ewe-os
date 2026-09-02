@@ -4,18 +4,20 @@
   // navigation, and nothing installs until the Summary's explicit button.
   import { choices, step, STEPS } from "./lib/state.js";
   import Welcome from "./lib/steps/Welcome.svelte";
+  import Network from "./lib/steps/Network.svelte";
   import TimePlace from "./lib/steps/TimePlace.svelte";
   import Disk from "./lib/steps/Disk.svelte";
   import User from "./lib/steps/User.svelte";
   import Summary from "./lib/steps/Summary.svelte";
   import Install from "./lib/steps/Install.svelte";
 
-  const COMPONENTS = [Welcome, TimePlace, Disk, User, Summary, Install];
+  const COMPONENTS = [Welcome, Network, TimePlace, Disk, User, Summary, Install];
 
   // per-step gate: can the user proceed?
   $: c = $choices;
   $: canNext = [
     true,
+    c.online,   // the install downloads everything — no network, no erase
     c.timezone !== "",
     c.disk !== null,
     c.username !== "" && c.password.length >= 4,

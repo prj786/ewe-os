@@ -9,7 +9,9 @@
   onMount(async () => {
     zones = await invoke("timezones");
     locales = await invoke("locales");
-    if (!$choices.timezone) {
+    if (!$choices.timezone && !$choices.online) {
+      note = "offline — pick your zone by hand (the Network step can get you online)";
+    } else if (!$choices.timezone) {
       const s = await invoke("suggest_timezone");
       if (s.zone) {
         $choices.timezone = s.zone;

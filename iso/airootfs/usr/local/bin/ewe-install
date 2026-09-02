@@ -106,7 +106,13 @@ install -m 644 $P/system/greeter/shell.qml /etc/xdg/quickshell/ewe-greeter/shell
   printf 'exec cage -s -- sh -c "qs -c ewe-greeter || regreet"\n'
 } > /usr/local/bin/ewe-greeter
 chmod 755 /usr/local/bin/ewe-greeter
-[ -f /usr/lib/security/pam_gnome_keyring.so ] && install -m 644 $P/system/pam.d/greetd /etc/pam.d/greetd
+# the keyring is unlocked by PAM at the greeter (pam_gnome_keyring auth +
+# session): without this file the first Google sign-in meets a "new keyring"
+# prompt instead of a ready one (first bare-metal install, 2026-09-02).
+# gnome-keyring is a hard dependency of ewe, so its absence is a broken box.
+[ -f /usr/lib/security/pam_gnome_keyring.so ] \
+    || { echo "xx pam_gnome_keyring.so is missing on the target — gnome-keyring should have come with ewe" >&2; exit 1; }
+install -m 644 $P/system/pam.d/greetd /etc/pam.d/greetd
 install -m 755 $P/system/bin/ewe-share-picker /usr/local/bin/ewe-share-picker
 # greetd drop-in (phase 35's): ordered after plymouth-quit-wait, the
 # black-screen guard, and — since 2026-09-01, config.toml vt = 1 — the

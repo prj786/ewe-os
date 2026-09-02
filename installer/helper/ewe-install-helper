@@ -89,9 +89,15 @@ mkfs)
 pacstrap)
     mountpoint -q "$MNT" || die "target not mounted"
     say pacstrap "installing the base system (this is the long one)"
-    pacstrap "$MNT" base linux linux-firmware 2>&1 | while IFS= read -r l; do
+    # `if !` keeps errexit from killing us silently: the error line below is
+    # what the installer shows (stdout is the progress stream; stderr is
+    # read too, but this one must reach the log).
+    if ! pacstrap "$MNT" base linux linux-firmware 2>&1 | while IFS= read -r l; do
         printf '{"phase":"pacstrap","log":%s}\n' "$(printf '%s' "$l" | python3 -c 'import json,sys;print(json.dumps(sys.stdin.read()[:160]))')"
-    done
+    done; then
+        printf '{"phase":"pacstrap","msg":"pacstrap failed — the base system could not be downloaded; check the connection and retry"}\n'
+        die "pacstrap failed — the base system could not be downloaded; check the connection and retry"
+    fi
     genfstab -U "$MNT" >> "$MNT/etc/fstab"
     say pacstrap "base installed, fstab written"
     ;;
@@ -189,9 +195,12 @@ sethostname)
 layer)
     mountpoint -q "$MNT" || die "target not mounted"
     say layer "delegating to ewe-install --layer-only (the field-tested path)"
-    EWE_INSTALL_MNT="$MNT" /usr/local/bin/ewe-install --layer-only 2>&1 | while IFS= read -r l; do
+    if ! EWE_INSTALL_MNT="$MNT" /usr/local/bin/ewe-install --layer-only 2>&1 | while IFS= read -r l; do
         printf '{"phase":"layer","log":%s}\n' "$(printf '%s' "$l" | python3 -c 'import json,sys;print(json.dumps(sys.stdin.read()[:160]))')"
-    done
+    done; then
+        printf '{"phase":"layer","msg":"the ewe layer failed — usually the [ewe] repo or a mirror was unreachable; check the connection and retry"}\n'
+        die "the ewe layer failed — usually the [ewe] repo or a mirror was unreachable; check the connection and retry"
+    fi
     say layer "done"
     ;;
 
