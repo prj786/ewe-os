@@ -1,7 +1,9 @@
 [Desktop Entry]
 Name=Install ewe
 Comment=Install the ewe desktop onto this machine (guided)
-Exec=sh -c "command -v ewe-installer >/dev/null && exec ewe-installer; exec kitty --title \"Install ewe\" -e /usr/local/bin/ewe-install"
+# Exec has no inner quotes on purpose: the Desktop Entry string type has no
+# \" escape (Quickshell rejected the old line as an illegal escape sequence).
+Exec=sh -c "command -v ewe-installer >/dev/null && exec ewe-installer; exec kitty --title Install-ewe -e /usr/local/bin/ewe-install"
 Icon=/usr/share/ewe/system/branding/ewe-logo-dark.png
 Terminal=false
 Type=Application

@@ -18,7 +18,7 @@
   $: canNext = [
     true,
     c.online,   // the install downloads everything — no network, no erase
-    c.timezone !== "",
+    c.timezone !== "" && (c.tzConfident || c.tzConfirmed),
     c.disk !== null,
     c.username !== "" && c.password.length >= 4,
     true,   // Summary's own button advances

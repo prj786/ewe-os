@@ -16,8 +16,9 @@
       if (s.zone) {
         $choices.timezone = s.zone;
         $choices.tzConfident = !!s.confident;
+        $choices.tzConfirmed = false;
         note = s.confident ? "detected from your network — confirm or change it"
-                           : "uncertain guess (providers disagree) — please check";
+                           : "Best guess — the two location services disagreed; please confirm your zone";
       }
     }
   });
@@ -27,11 +28,17 @@
 <p class="mb-6 text-sm text-zinc-400">{note || "Pick your timezone and language."}</p>
 
 <label class="mb-1 block text-sm text-zinc-300" for="tz">Timezone</label>
-<select id="tz" class="input mb-4 max-w-96"
-        bind:value={$choices.timezone}>
-  <option value="" disabled>choose…</option>
-  {#each zones as z}<option value={z}>{z}</option>{/each}
-</select>
+<div class="mb-4 flex max-w-96 items-center gap-2">
+  <select id="tz" class="input flex-1"
+          bind:value={$choices.timezone} onchange={() => ($choices.tzConfirmed = true)}>
+    <option value="" disabled>choose…</option>
+    {#each zones as z}<option value={z}>{z}</option>{/each}
+  </select>
+  {#if $choices.timezone && !$choices.tzConfident && !$choices.tzConfirmed}
+    <!-- the guess is usually right, but a disagreeing guess is never accepted silently -->
+    <button class="btn-primary whitespace-nowrap px-3 py-1.5 text-sm" onclick={() => ($choices.tzConfirmed = true)}>Use this zone</button>
+  {/if}
+</div>
 
 <label class="mb-1 block text-sm text-zinc-300" for="loc">Language / locale</label>
 <select id="loc" class="input max-w-96"

@@ -8,6 +8,7 @@ export const choices = writable({
   online: false,           // Network step: NetworkManager reports full connectivity
   timezone: "",            // filled by the (confirmed) suggestion or the picker
   tzConfident: false,
+  tzConfirmed: false,       // a low-confidence guess needs an explicit click (Use this zone / a pick)
   disk: null,              // { path, size, model }
   // ── decided by ewe, not asked (the product IS the absence of these
   // questions): btrfs @/@home+zstd, systemd-boot, swapfile hibernation

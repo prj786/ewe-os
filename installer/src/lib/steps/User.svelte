@@ -1,9 +1,14 @@
 <script>
   import { choices } from "../state.js";
-  // username auto-derives from the name until the user edits it directly
+  // username auto-derives from the name (REPLACING the field) only while the
+  // user has not typed in it; clearing the field hands it back to derivation
   let touched = false;
-  $: if (!touched && $choices.realName)
-    $choices.username = $choices.realName.toLowerCase().replace(/[^a-z0-9]+/g, "").slice(0, 16);
+  const derive = (n) => n.toLowerCase().replace(/[^a-z0-9]+/g, "").slice(0, 16);
+  $: if (!touched) $choices.username = $choices.realName ? derive($choices.realName) : "";
+  function onUsernameInput() {
+    touched = $choices.username !== "";
+    $choices.username = derive($choices.username);
+  }
 </script>
 
 <h1 class="mb-1 text-2xl font-bold tracking-tight">Your account</h1>
@@ -14,7 +19,7 @@
        bind:value={$choices.realName} placeholder="Dolly Sheep" />
 <label class="mb-1 block text-sm text-zinc-300" for="un">Username</label>
 <input id="un" class="input mb-3 w-72"
-       bind:value={$choices.username} oninput={() => (touched = true)} placeholder="dolly" />
+       bind:value={$choices.username} oninput={onUsernameInput} placeholder="dolly" />
 <label class="mb-1 block text-sm text-zinc-300" for="pw">Password</label>
 <input id="pw" type="password" class="input mb-3 w-72"
        bind:value={$choices.password} placeholder="at least 4 characters" />
