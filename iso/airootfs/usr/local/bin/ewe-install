@@ -107,7 +107,7 @@ install -m 644 $P/system/greeter/shell.qml /etc/xdg/quickshell/ewe-greeter/shell
 } > /usr/local/bin/ewe-greeter
 chmod 755 /usr/local/bin/ewe-greeter
 # the keyring is unlocked by PAM at the greeter (pam_gnome_keyring auth +
-# session): without this file the first Google sign-in meets a "new keyring"
+# session): without this file the first account sign-in meets a "new keyring"
 # prompt instead of a ready one (first bare-metal install, 2026-09-02).
 # gnome-keyring is a hard dependency of ewe, so its absence is a broken box.
 [ -f /usr/lib/security/pam_gnome_keyring.so ] \

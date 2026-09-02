@@ -44,7 +44,14 @@ reads solid black even while the guest renders.
 - [ ] target is fully updated: `pacman -Qu` is empty at first boot
 - [ ] first login: `journalctl -b | grep gkr-pam` shows the keyring
       unlocked/created, no "invalid"; `~/.local/share/keyrings/login.keyring`
-      exists and Google sign-in stores its token with no keyring prompt
+      exists
+- [ ] Welcome → Sign in to Nextcloud completes against the test mock
+      (`tests/mock-nextcloud.py` in the ewe repo, `EWE_CLOUD_SERVER_INSECURE=1`)
+      or a real account: the app password lands in the keyring with no
+      keyring prompt, `ewe-cloud status` says signed in, `ewe-conf push`
+      lands `ewe/ewe.conf` in the account
+- [ ] Settings → Account: the Google card shows **Not configured** (no
+      client file) — the package must ship none
 
 ## Updates
 

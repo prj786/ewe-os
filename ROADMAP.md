@@ -182,6 +182,32 @@ Dolly gates (each verified, not assumed):
       your Drive folder return
 - [ ] docs: install guide, troubleshooting, project site
 
+## 0.9-alpha — your account, your cloud
+
+RFC-005 + RFC-006 (owner decision, 2026-09-02): the ewe account becomes the
+user's own Nextcloud; Google shrinks to an optional extra that needs the
+user's own client file; nothing about the owner lives in the package. Lands
+from the `nextcloud` branches of ewe, komble-arch, ewe-settings, ewe-repo,
+ewe-os and the website as one wave (DE 0.10.0, Komble + ewe-settings
+0.10.0, Flock 0.1.0, ISO 0.9-alpha).
+
+- [ ] Nextcloud account: `ewe-cloud` (Login Flow v2, app password in the
+      keyring), `ewe-conf` sync over WebDAV with the server's If-Match guard,
+      calendar via CalDAV, mail via IMAP; Welcome signs in to Nextcloud
+- [ ] Komble is manifest-only: no sync/backup/restore buttons; every install
+      and removal writes `apps.installed` with a true source
+- [ ] Settings → Account pane: the Nextcloud card, then Google (optional,
+      client file only)
+- [ ] Flock, the account app (RFC-006): tray, machines, folder sync on
+      `nextcloudcmd`; preinstalled
+- [ ] no Google client shipped: `EWE_OAUTH_CLIENT` gone from ewe-repo,
+      the package assertion refuses one; the website's account page
+      recommends providers
+- [ ] e2e on a real account (the owner's Nextcloud): sign in, push, second
+      machine pulls, conflict, restore, apps reinstall, calendar + mail
+- [ ] ISO 0.9-alpha through the QEMU checklist
+- [ ] ISO 0.9-alpha on real hardware
+
 ## 1.0.0 — "Dolly" · the release
 
 No suffix, no beta tag — the official ewe OS. Named for the sheep that

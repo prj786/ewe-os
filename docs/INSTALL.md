@@ -60,9 +60,13 @@ button on the Summary screen.
 
 The installed machine boots through the ewe splash into the graphical
 greeter. The first login opens the **Welcome** flow: connect to the
-internet (Wi-Fi is joined from the flow itself), sign in with Google
-(optional, one consent for calendar, mail, sync, Drive), restore a backup
-if your account has one from another ewe machine, and a sixty-second tour.
+internet (Wi-Fi is joined from the flow itself), install any updates that
+are waiting, **sign in to your Nextcloud** (the card with the Nextcloud
+logo — any provider, or a server you run; ewe opens your server's own login
+page and never sees your password), restore a backup if your account
+holds one from another ewe machine, and a sixty-second tour. Google is not
+part of the flow: it is optional, for Gmail notifications and a Drive
+folder, and needs your own OAuth client file (Settings → Account).
 
 ### Decided by ewe
 
@@ -80,9 +84,12 @@ if your account has one from another ewe machine, and a sixty-second tour.
 
 - **Updates**: Komble → Updates, or `sudo pacman -Syu`. The top-bar download
   glyph tells you when something is pending.
-- **Google**: Settings → User → *Connect Google* if you skipped it in the
-  Welcome flow. Signing in also mounts your Drive at `~/Google Drive`
-  (Files → sidebar).
+- **Your account**: Settings → Account → *Sign in to Nextcloud* if you
+  skipped it in the Welcome flow. Sync of the one file, your calendar and
+  your files (`~/Nextcloud`) come from that account.
+- **Google (optional)**: Settings → Account → the Google card, only after
+  you drop your own OAuth client at `~/.config/ewe/oauth-client.json`; it
+  adds Gmail notifications and a Drive folder, nothing else.
 - **Settings**: Super + , — or the gear in the Control Center.
 - **Language later**: Settings → Time & Place → Language.
 
