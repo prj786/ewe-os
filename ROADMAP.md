@@ -150,6 +150,12 @@ install, so metal only has to answer the questions only metal can.
       identity, keyring/sign-in, offline installer, no Wi-Fi step in
       Welcome/installer, signed AUR builds) — fixes in DE 0.9.16-x hotfixes
       + installer Network step; metal re-test owed
+- [x] ISO 0.8.1-alpha (2026-09-02), the metal lessons on the ISO side:
+      Network step (Wi-Fi join, Next gated on connectivity), no disk erase
+      offline, helper errors reach the screen + Retry/Back, the live ISO
+      autostarts the installer (not Komble), /etc/pam.d/greetd laid down
+      unconditionally + asserted, a full `pacman -Syu` in the target after
+      the layer so first boot owes no updates
 
 ## 0.9.x — the beta wave (owner decision, 2026-08-29)
 

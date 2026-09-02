@@ -51,10 +51,12 @@ button on the Summary screen.
 5. **Your account** — name, username, password, computer name.
 6. **Summary** — everything you chose, the *Decided by ewe* panel, and the
    only Install button.
-7. **Install** — a last connectivity check, then streamed progress, then
-   **Reboot**. Remove the stick when the screen goes dark. If a step
-   fails, the screen says why and offers **Retry** (the disk is
-   partitioned again from scratch) or **Back**.
+7. **Install** — a last connectivity check, then streamed progress:
+   the base system, the desktop, then **updating the installed system**
+   so the first boot owes no updates, then **Reboot**. Remove the stick
+   when the screen goes dark. If a step fails, the screen says why and
+   offers **Retry** (the disk is partitioned again from scratch) or
+   **Back**.
 
 The installed machine boots through the ewe splash into the graphical
 greeter. The first login opens the **Welcome** flow: connect to the

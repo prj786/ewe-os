@@ -204,6 +204,24 @@ layer)
     say layer "done"
     ;;
 
+# ── upgrade — the target is CURRENT at first boot ───────────────────────────
+# pacstrap + layer install whatever the mirrors held at that moment, and the
+# ISO's own package cache may be days old: the first bare-metal install
+# (2026-09-02) booted into a desktop that immediately owed a large update.
+# One full -Syu in the chroot, before the bootloader step reads the final
+# kernel + microcode, so the user never meets "updates pending" on login.
+upgrade)
+    mountpoint -q "$MNT" || die "target not mounted"
+    say upgrade "updating the installed system (kernel, firmware, the desktop)"
+    if ! arch-chroot "$MNT" pacman -Syu --noconfirm 2>&1 | while IFS= read -r l; do
+        printf '{"phase":"upgrade","log":%s}\n' "$(printf '%s' "$l" | python3 -c 'import json,sys;print(json.dumps(sys.stdin.read()[:160]))')"
+    done; then
+        printf '{"phase":"upgrade","msg":"the update after install failed — check the connection and retry"}\n'
+        die "the update after install failed — check the connection and retry"
+    fi
+    say upgrade "the installed system is current"
+    ;;
+
 reboot)
     say reboot "unmounting and rebooting"
     umount -R "$MNT" 2>/dev/null || true

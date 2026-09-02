@@ -46,6 +46,9 @@
         ["sethostname", [c.hostname], null],
         ["user", [c.realName, c.username], c.password],
         ["layer", [], null],
+        // a full -Syu in the target so first boot owes nothing; before
+        // bootloader, which reads the final kernel + microcode
+        ["upgrade", [], null],
         ["bootloader", [], null],
       ];
       for (const [stepName, args, secret] of seq) {

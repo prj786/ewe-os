@@ -41,6 +41,10 @@ reads solid black even while the guest renders.
 - [ ] reboot from disk: greeter lists "Ewe", login lands in the desktop
 - [ ] on the installed system: `sudo pacman -Syu` works; lock screen unlocks
       with the user's password
+- [ ] target is fully updated: `pacman -Qu` is empty at first boot
+- [ ] first login: `journalctl -b | grep gkr-pam` shows the keyring
+      unlocked/created, no "invalid"; `~/.local/share/keyrings/login.keyring`
+      exists and Google sign-in stores its token with no keyring prompt
 
 ## Updates
 

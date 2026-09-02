@@ -394,6 +394,7 @@ async fn run_step(
         "setlocale",
         "sethostname",
         "layer",
+        "upgrade",
         "reboot",
     ];
     if !allowed.contains(&step.as_str()) {

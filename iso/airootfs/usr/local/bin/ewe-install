@@ -124,6 +124,11 @@ systemctl enable greetd.service getty@tty3.service NetworkManager.service blueto
     power-profiles-daemon.service systemd-timesyncd.service avahi-daemon.service
 CHROOT
 ok "greeter (greetd → cage → Quickshell greeter) + core services enabled"
+# The login keyring is CREATED by pam_gnome_keyring at the first login, with
+# the login password — never by a hidden "new keyring" prompt in the session
+# (the 2026-09-02 metal failure). Assert the PAM stack really carries it.
+grep -q pam_gnome_keyring "$MNT/etc/pam.d/greetd" \
+    || die "/etc/pam.d/greetd on the target lacks pam_gnome_keyring — the login keyring would never unlock."
 
 # 2b · CPU microcode for this machine (mirrors install.sh phase 37); the
 # mkinitcpio `microcode` hook picks it up on the rebuild below
@@ -137,6 +142,15 @@ if [ -n "$ucode" ]; then
         && ok "CPU microcode: $ucode" \
         || echo "!! $ucode install failed — boot works without it, install later."
 fi
+
+# 2c · the target is CURRENT at first boot: pacstrap/layer took whatever the
+# mirrors held at that moment and the ISO cache may be days old — the first
+# metal install (2026-09-02) booted into a large pending update. One full
+# upgrade here, before the initramfs rebuild below sees the final kernel.
+say "updating the installed system (kernel, firmware, the desktop)"
+arch-chroot "$MNT" pacman -Syu --noconfirm \
+    || die "the update after install failed — check the connection and retry."
+ok "installed system is current"
 
 # 2c · branded, silent boot — the Ubuntu/Fedora treatment (phase 35's recipe):
 # the ewe plymouth theme from the payload, the plymouth hook AFTER kms (the
