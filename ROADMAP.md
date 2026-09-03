@@ -186,27 +186,83 @@ Dolly gates (each verified, not assumed):
 
 RFC-005 + RFC-006 (owner decision, 2026-09-02): the ewe account becomes the
 user's own Nextcloud; Google shrinks to an optional extra that needs the
-user's own client file; nothing about the owner lives in the package. Lands
+user's own client file; nothing about the owner lives in the package. Landed
 from the `nextcloud` branches of ewe, komble-arch, ewe-settings, ewe-repo,
-ewe-os and the website as one wave (DE 0.10.0, Komble + ewe-settings
-0.10.0, ewe-sync 0.1.0, ISO 0.9-alpha).
+ewe-os and the website as one wave; those branches are now merged into every
+`main` and the code shipped past what this list predicted (DE 0.10.2,
+ewe-settings 0.10.1, ewe-sync 0.2.0).
 
-- [ ] Nextcloud account: `ewe-cloud` (Login Flow v2, app password in the
+- [x] Nextcloud account: `ewe-cloud` (Login Flow v2, app password in the
       keyring), `ewe-conf` sync over WebDAV with the server's If-Match guard,
       calendar via CalDAV, mail via IMAP; Welcome signs in to Nextcloud
-- [ ] Komble is manifest-only: no sync/backup/restore buttons; every install
+      (tests: ewe-cloud / ewe-caldav / ewe-mail / ewe-conf-sync, all green)
+- [x] Komble is manifest-only: no sync/backup/restore buttons; every install
       and removal writes `apps.installed` with a true source
-- [ ] Settings → Account pane: the Nextcloud card, then Google (optional,
-      client file only)
-- [ ] ewe-sync, the account app (RFC-006): tray, machines, folder sync on
-      `nextcloudcmd`; preinstalled
-- [ ] no Google client shipped: `EWE_OAUTH_CLIENT` gone from ewe-repo,
-      the package assertion refuses one; the website's account page
-      recommends providers
-- [ ] e2e on a real account (the owner's Nextcloud): sign in, push, second
-      machine pulls, conflict, restore, apps reinstall, calendar + mail
+- [x] the account panes, in their RFC-006 shape (2026-09-03) — NOT the split
+      this list first described. ewe-sync owns every verb that changes an
+      account: Nextcloud sign-in/out, push, restore, machines, folders, the
+      IMAP mailbox, and Google. ewe-settings → User is a read-out plus the
+      preferences that are the machine's own (avatar, name, avatar shape,
+      the new-mail notification switch) and a "Manage in ewe-sync" button
+- [x] ewe-sync, the account app (RFC-006): tray, machines, folder sync on
+      `nextcloudcmd`; preinstalled (the desktop depends on it, and the
+      publish workflow asserts that dependency)
+- [x] no Google client shipped: `EWE_OAUTH_CLIENT` gone from ewe-repo, the
+      publish gate refuses a package carrying `oauth-client.json`, and the
+      PKGBUILD's injection block — which outlived the decision and
+      contradicted that gate — is gone (2026-09-03). The website's account
+      page recommends providers
+- [x] the Nextcloud desktop client never appears: kept for `nextcloudcmd`
+      only, its launcher entry hidden by a shipped override, so ewe-sync is
+      the single sync surface (2026-09-03)
+- [ ] e2e on a real account (the owner's Nextcloud): sign-in, push and sync
+      are confirmed live on the owner's tab.digital account; **the second
+      machine, conflict, restore and apps-reinstall legs are still owed**
 - [ ] ISO 0.9-alpha through the QEMU checklist
 - [ ] ISO 0.9-alpha on real hardware
+
+## 0.10.x — the desktop stops losing your work (2026-09-03)
+
+Not a distro release: the DE line, cut while the ISO deliberately stays at
+0.8.1-alpha. Three field bugs, all of them things a user actually hit, and
+two of them capable of destroying a session's work.
+
+- [x] **the keyring stops asking** (DE 0.10.2). Arch's preset ENABLES
+      `gnome-keyring-daemon.socket`, so systemd started a password-less
+      daemon at login, claimed `org.freedesktop.secrets` before
+      `pam_gnome_keyring` could hand its own daemon the login password, and
+      then restarted it mid-login. One unit caused all three reported
+      symptoms: no `login` keyring is ever created (a "Default keyring"
+      prompt appears instead of a silent unlock), prompts stack up
+      unanswered, and the first sign-in dies with `keyring-timeout`. Phase
+      30 masks both units; `ewe-setup` repeats the mask per-user so an
+      installed machine heals itself at the next login. Postcheck now
+      asserts the cause, not the symptom
+- [x] **a display change no longer takes the session with it** (DE 0.10.2).
+      SharePicker held an `ext_output_image_capture_source` for every
+      monitor from login to logout — the Scope is created eagerly and its
+      screen Repeater was unguarded — so a dock hotplug rebuilt the
+      delegates against an output the compositor was tearing down:
+      `ext_output_image_capture_source_manager_v1: error -1: invalid output
+      resource`. A Wayland protocol error is fatal to the whole client, so
+      the shell died on plugging a monitor in. Thumbnails now exist only
+      while the picker is open
+- [x] **a shell crash is no longer a session-wide data-loss event** (DE
+      0.10.2). Apps launched from the shell inherit `ewe.service`'s cgroup,
+      so with the default `KillMode=control-group` every restart SIGKILLed
+      the user's whole desktop — the crash above was followed by
+      "Killing process 100982 (jetbrainsd)" and browser and Slack coredumps
+      in the same second. `KillMode=process` scopes a restart to quickshell
+      itself; logind still reaps apps at logout
+- [x] Welcome is a floating card: no dimmed backdrop, input region is the
+      card alone, and no height animation between steps
+- [ ] **upstream**: Quickshell 0.3.1 SIGSEGVs in `QScreen::handle()` on
+      monitor *removal* (Wayland event dispatch → destroyed QScreen). It
+      self-recovers via Quickshell's crash handler, and 0.3.1 is the newest
+      in `extra`, so there is nothing to bump to. The capture-source fix
+      above removes the only thing in the shell that held monitors across
+      removal and may well remove the trigger — unproven without debug
+      symbols. Needs mileage: ewe#1
 
 ## 1.0.0 — "Dolly" · the release
 
