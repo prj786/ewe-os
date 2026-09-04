@@ -6,10 +6,16 @@ technical is decided for you (see *Decided by ewe* below).
 
 ## 1 · Get the ISO
 
-Download the newest release from
-<https://github.com/prj786/ewe-os/releases>. GitHub caps release files at
-2 GiB, so the image comes as `.part` files plus `SHA256SUMS`. Join and
-verify:
+Get it in one piece from <https://prj786.github.io/download/>, which links
+the whole image on the Internet Archive. Then check it arrived intact:
+
+```sh
+sha256sum -c SHA256SUMS --ignore-missing
+```
+
+A mirror lives on the [GitHub release](https://github.com/prj786/ewe-os/releases).
+GitHub caps a release file at 2 GiB and the image is larger, so that copy is
+split — download every `.part` into one folder and join them first:
 
 ```sh
 cat ewe-*-x86_64.iso.*.part > ewe-x86_64.iso

@@ -1,11 +1,23 @@
-# Build the ISO in CI and attach it to the release for the pushed tag.
+# Build the ISO in CI, publish it whole, and attach a split copy to the
+# release for the pushed tag.
+#
 # mkarchiso needs loop devices + mounts, which GitHub's `container:` jobs
 # can't grant — so the job drives a --privileged docker run by hand.
-# Assets: the ISO in <2GiB split parts (GitHub caps release assets) plus
-# SHA256SUMS covering the whole and the parts.
 #
-#   cat ewe-*-x86_64.iso.*.part > ewe-<ver>-x86_64.iso
-#   sha256sum -c SHA256SUMS --ignore-missing
+# WHERE THE IMAGE GOES. A GitHub release asset is capped at 2 GiB and the
+# image is ~3 GB, which is why downloads used to arrive as `.part` files the
+# reader had to `cat` back together — a bad first thing to ask of someone
+# trying a distro. So the whole image goes to the Internet Archive, which
+# hosts freely-licensed images whole, for free, permanently, at a direct URL:
+#
+#   https://archive.org/download/ewe-os-<ver>/ewe-<ver>-x86_64.iso
+#
+# The split parts still go to the GitHub release as a mirror, so the image is
+# never behind a single host. One SHA256SUMS covers the whole and the parts.
+#
+# SECRETS. IA_ACCESS / IA_SECRET, from https://archive.org/account/s3.php.
+# Without them the Archive step is SKIPPED, not failed: the parts still
+# publish, so a fork can build the ISO without an Archive account.
 
 name: release-iso
 on:
@@ -57,11 +69,70 @@ jobs:
             '
           ls -lh out/
 
-      - name: Split + checksum
+      - name: Checksum the whole image
+        id: iso
         run: |
           cd out
           iso=$(ls ewe-*-x86_64.iso)
           sha256sum "$iso" > SHA256SUMS
+          echo "name=$iso" >> "$GITHUB_OUTPUT"
+          cat SHA256SUMS
+
+      # The whole image, one file, one click. Skipped rather than failed when
+      # the keys are absent, so the parts below still publish.
+      - name: Publish the whole ISO to the Internet Archive
+        id: archive
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          IA_ACCESS: ${{ secrets.IA_ACCESS }}
+          IA_SECRET: ${{ secrets.IA_SECRET }}
+          ISO: ${{ steps.iso.outputs.name }}
+        run: |
+          if [ -z "${IA_ACCESS:-}" ] || [ -z "${IA_SECRET:-}" ]; then
+            echo ":: IA_ACCESS / IA_SECRET are not set — skipping the Archive upload."
+            echo "   Generate keys at https://archive.org/account/s3.php and add"
+            echo "   them as repository secrets to publish the image whole."
+            echo "done=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          tag="${GITHUB_REF_NAME}"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            tag="$(gh release list --limit 1 --json tagName -q '.[0].tagName')"
+          fi
+          item="ewe-os-${tag#v}"
+
+          pip install --quiet internetarchive
+          export IA_CONFIG_FILE="$RUNNER_TEMP/ia.ini"
+          printf '[s3]\naccess = %s\nsecret = %s\n' "$IA_ACCESS" "$IA_SECRET" > "$IA_CONFIG_FILE"
+
+          # from out/, because `ia upload` names the remote file after the
+          # path it is handed — from the workspace root the image would land
+          # in the item as "out/ewe-….iso" and every download link would break
+          cd out
+
+          # --retries because a 3 GB upload does fail sometimes, and rebuilding
+          # the ISO to recover from that would cost the better part of an hour.
+          ia upload "$item" "$ISO" SHA256SUMS \
+            --metadata="title:ewe OS $tag" \
+            --metadata="mediatype:software" \
+            --metadata="collection:opensource_media" \
+            --metadata="creator:ewe" \
+            --metadata="licenseurl:https://www.gnu.org/licenses/old-licenses/gpl-2.0.html" \
+            --metadata="subject:linux;arch linux;iso;operating system;hyprland;wayland" \
+            --metadata="description:ewe OS $tag — a complete, Arch-based operating system. x86_64 hybrid ISO with a live session and a six-screen installer. https://prj786.github.io/" \
+            --retries=6
+
+          {
+            echo "done=true"
+            echo "item=$item"
+            echo "url=https://archive.org/download/$item/$ISO"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Split for the GitHub mirror
+        run: |
+          cd out
+          iso="${{ steps.iso.outputs.name }}"
           split -b 1900M -d --additional-suffix=.part "$iso" "$iso."
           sha256sum "$iso".*.part >> SHA256SUMS
           rm "$iso"
@@ -70,6 +141,7 @@ jobs:
       - name: Attach to the release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISO: ${{ steps.iso.outputs.name }}
         run: |
           tag="${GITHUB_REF_NAME}"
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
@@ -78,3 +150,53 @@ jobs:
           gh release view "$tag" >/dev/null 2>&1 || \
             gh release create "$tag" --title "ewe OS $tag" --generate-notes
           gh release upload "$tag" out/SHA256SUMS out/*.part --clobber
+
+          # Point the release at the whole image, so nobody lands here and
+          # concludes the parts are the only way to get it.
+          if [ "${{ steps.archive.outputs.done }}" = "true" ]; then
+            gh release view "$tag" --json body -q .body > /tmp/notes.md
+            grep -q 'archive.org' /tmp/notes.md || {
+              {
+                echo "## Download"
+                echo
+                echo "**[Download the whole ISO](${{ steps.archive.outputs.url }})** — one file, one click."
+                echo
+                echo "The \`.part\` files below are the same image, split because GitHub caps a"
+                echo "release asset at 2 GiB. Join them with:"
+                echo
+                echo '```'
+                echo "cat ${ISO}.*.part > ${ISO}"
+                echo "sha256sum -c SHA256SUMS --ignore-missing"
+                echo '```'
+                echo
+                cat /tmp/notes.md
+              } > /tmp/body.md
+              gh release edit "$tag" --notes-file /tmp/body.md
+            }
+          fi
+
+      # The website bakes the version in at build time rather than asking
+      # GitHub for it at page load, which would break its "no third-party
+      # requests" promise. One line to move; here it is, ready to paste.
+      - name: Tell me what to change on the website
+        if: always()
+        env:
+          ISO: ${{ steps.iso.outputs.name }}
+        run: |
+          tag="${GITHUB_REF_NAME}"
+          {
+            echo "### Website"
+            echo
+            echo 'In `prj786.github.io/src/lib/release.js`:'
+            echo
+            echo '```js'
+            echo "export const VERSION = '${tag#v}';"
+            echo '```'
+            echo
+            if [ "${{ steps.archive.outputs.done }}" = "true" ]; then
+              echo "Whole ISO: ${{ steps.archive.outputs.url }}"
+            else
+              echo "> The Archive upload was skipped, so the download button on the site"
+              echo "> would 404. Add the IA_ACCESS / IA_SECRET secrets and re-run."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
