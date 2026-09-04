@@ -69,8 +69,8 @@
 <p class="mb-6 text-sm text-zinc-400">ewe downloads itself during the install, so it needs the internet before any disk is touched. Plug in a cable or join a Wi-Fi network.</p>
 
 <div class="card mb-6 flex max-w-xl items-center gap-3 p-4">
-  <span class="ph-i text-[22px]" style={online ? "color: var(--accent)" : "color: var(--color-zinc-500)"}>
-    {String.fromCodePoint(online ? 0xe182 : status.wired ? 0xe4ea : 0xebc0)}
+  <span class="icon text-[22px]" style={online ? "color: var(--accent)" : "color: var(--color-zinc-500)"}>
+    {String.fromCodePoint(online ? 0xE06C : status.wired ? 0xE1AE : 0xE1AF)}
   </span>
   <div class="min-w-0 flex-1">
     <div class="text-sm font-medium">{headline}</div>
@@ -90,9 +90,9 @@
       <button class="flex w-full items-center justify-between px-4 py-3 text-left hover:bg-zinc-800/60 rounded-xl"
               disabled={joining !== ""} onclick={() => join(n)}>
         <div class="flex items-center gap-3">
-          <span class="ph-i text-[16px] text-zinc-400">{String.fromCodePoint(n.signal > 66 ? 0xebc4 : n.signal > 33 ? 0xebc2 : 0xebc1)}</span>
+          <span class="icon text-[16px] text-zinc-400">{String.fromCodePoint(n.signal > 66 ? 0xE1AE : n.signal > 33 ? 0xE5F7 : 0xE5F8)}</span>
           <span class="text-sm font-medium">{n.ssid}</span>
-          {#if n.secured}<span class="ph-i text-[12px] text-zinc-500">{String.fromCodePoint(0xe3c6)}</span>{/if}
+          {#if n.secured}<span class="icon text-[12px] text-zinc-500">{String.fromCodePoint(0xE10B)}</span>{/if}
         </div>
         <span class="text-xs text-zinc-500">{n.in_use ? "connected" : joining === n.ssid ? "joining…" : `${n.signal}%`}</span>
       </button>

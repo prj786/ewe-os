@@ -23,13 +23,13 @@ export const choices = writable({
 
 export const step = writable(0);
 
-// icon: Phosphor-Fill codepoints — the DE's one icon language
+// icon: Lucide codepoints — the DE's one icon language
 export const STEPS = [
-  { key: "welcome", label: "Welcome", icon: 0xe580 },
-  { key: "network", label: "Network", icon: 0xe4ea },
-  { key: "timeplace", label: "Time & place", icon: 0xe28c },
-  { key: "disk", label: "Disk", icon: 0xe2a0 },
-  { key: "user", label: "Your account", icon: 0xe4c4 },
-  { key: "summary", label: "Summary", icon: 0xeadc },
-  { key: "install", label: "Install", icon: 0xe20c },
+  { key: "welcome", label: "Welcome", icon: 0xE1D7 },
+  { key: "network", label: "Network", icon: 0xE1AE },
+  { key: "timeplace", label: "Time & place", icon: 0xE0E8 },
+  { key: "disk", label: "Disk", icon: 0xE0ED },
+  { key: "user", label: "Your account", icon: 0xE461 },
+  { key: "summary", label: "Summary", icon: 0xE1D0 },
+  { key: "install", label: "Install", icon: 0xE0B2 },
 ];

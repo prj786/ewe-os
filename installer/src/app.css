@@ -5,17 +5,18 @@
 @import "shadcn-svelte/tailwind.css";
 @import "tw-animate-css";
 
-/* Phosphor Fill (MIT, vendored) — the DE's single icon language; used via
-   .ph-i spans with a literal glyph codepoint. */
+/* Lucide 1.40.0 (ISC, vendored) — the DE's single icon language, the same
+   face and codepoints the shell loads; used via .icon spans with a literal
+   glyph codepoint. */
 @font-face {
-  font-family: "Phosphor-Fill";
-  src: url("./assets/Phosphor-Fill.ttf") format("truetype");
+  font-family: "lucide";
+  src: url("./assets/Lucide.ttf") format("truetype");
   font-weight: normal;
   font-style: normal;
   font-display: block;
 }
-.ph-i {
-  font-family: "Phosphor-Fill";
+.icon {
+  font-family: "lucide";
   font-style: normal;
   line-height: 1;
   display: inline-block;

@@ -62,7 +62,7 @@ like a themed Arch and starts looking finished.
       systemd-boot menu, microcode, `os-release` says ewe (ID_LIKE=arch)
 - [x] ISO branding leaks closed: GRUB/loopback entries, speech entry,
       tty1 root-prompt flash (rescue console → tty3)
-- [x] ewe-installer wears the family design system (dark tokens, Phosphor
+- [x] ewe-installer wears the family design system (dark tokens, Lucide
       rail, .input/.card, full xkb layout registry) — first ISO to carry it
 - [x] installed systems never carry the installer (verified: it lives only
       in the live squashfs)

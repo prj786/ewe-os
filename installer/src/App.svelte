@@ -29,7 +29,7 @@
 </script>
 
 <div class="flex h-full">
-  <!-- rail — same shape as ewe-settings' sidebar: Phosphor glyphs, accent on
+  <!-- rail — same shape as ewe-settings' sidebar: Lucide glyphs, accent on
        the active row, a check where a decision is already made -->
   <aside class="flex w-56 shrink-0 flex-col border-r border-zinc-800/60 bg-black/20">
     <div class="flex items-center gap-2 px-4 pb-2 pt-5">
@@ -42,8 +42,8 @@
         <div class="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-sm transition-colors
                     {i === $step ? 'text-white' : i < $step ? 'text-zinc-400' : 'text-zinc-600'}"
              style={i === $step ? "background: color-mix(in srgb, var(--accent) 22%, transparent)" : ""}>
-          <span class="ph-i w-4 shrink-0 text-center text-[16px]"
-                style={i < $step ? "color: var(--accent)" : ""}>{String.fromCodePoint(i < $step ? 0xe182 : s.icon)}</span>
+          <span class="icon w-4 shrink-0 text-center text-[16px]"
+                style={i < $step ? "color: var(--accent)" : ""}>{String.fromCodePoint(i < $step ? 0xE06C : s.icon)}</span>
           <span class="min-w-0 flex-1 truncate">{s.label}</span>
         </div>
       {/each}
