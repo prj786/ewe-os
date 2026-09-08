@@ -264,6 +264,28 @@ two of them capable of destroying a session's work.
       removal and may well remove the trigger — unproven without debug
       symbols. Needs mileage: ewe#1
 
+## 0.12.1-beta — two things the first real install tripped on (2026-09-08)
+
+The ISO rebuilt from the [ewe] repo after Komble 0.12.2-beta and
+ewe-settings 0.12.2-beta; the DE stays at 0.12.3-beta.
+
+- [x] **Komble stops calling the desktop up to date while listing it as a
+      pending system update** (Komble 0.12.2-beta). The ewe Desktop rows
+      compared against GitHub's "Latest" release, which skips prereleases:
+      with every release a -beta, v0.11.2 was "latest", nothing was ever
+      newer than the installed 0.12.x, and the rows sat on a green tick
+      while checkupdates listed the same packages below. A package the
+      [ewe] repo carries is now pacman's: status from the one checkupdates
+      list, shown once, updated by the system upgrade
+- [x] **Settings offers only the scales Hyprland will keep** (ewe-settings
+      0.12.2-beta). Hyprland rejects a scale that leaves the logical size
+      fractional and snaps to the nearest clean divisor on a 1/120 grid —
+      175% on a 2880×1800 panel came back as 180%, which Settings then
+      showed as if it had been chosen. The Scale row lists what the
+      resolution divides, and a resolution change snaps the scale the way
+      the compositor would
+- [ ] casting (ewe-cast) still does not work — next
+
 ## 1.0.0 — "Dolly" · the release
 
 No suffix, no beta tag — the official ewe OS. Named for the sheep that
