@@ -81,6 +81,7 @@ nfs-utils
 nilfs-utils
 nmap
 ntfsprogs
+nvidia-open
 nvme-cli
 open-iscsi
 open-vm-tools
