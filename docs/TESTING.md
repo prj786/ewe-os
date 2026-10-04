@@ -24,7 +24,10 @@ reads solid black even while the guest renders.
 
 - [ ] boot reaches the desktop with no interaction (autologin, first-boot
       deploy runs; a short plymouth-covered pause is OK, black screen is not)
-- [ ] bar, dock, launcher (Super+D), Quick Settings all open
+- [ ] bar, dock, launcher (Super+D), Quick Settings all open — the dock is
+      the `ewe.dock` add-on, installed for the live user by
+      `ewe-live-deploy` (a fresh account has none since ewe 0.25); "Install
+      ewe" sits first in it and the installer opened by itself
 - [ ] folder/app icons render (Reversal) — pink/black tiles = theme missing
 - [ ] network up (NetworkManager); Komble opens and loads the AM catalog
 - [ ] `sudo pacman -Syu` resolves against `[ewe]` without errors
@@ -36,8 +39,16 @@ reads solid black even while the guest renders.
 
 - [ ] QEMU with a blank virtio disk: run "Install ewe" (or `ewe-install`),
       minimal archinstall config, one user account
+- [ ] the Add-ons step lists the payload's 13 add-ons, nothing pre-checked;
+      pick 2–3 (say the dock, clipboard, music); the Summary names them
 - [ ] installer completes; target has `[ewe]` in pacman.conf, greetd enabled,
       wayland session entry, user's home deployed (`~/.local/share/ewe`)
+- [ ] on the installed disk: `ewe-plugin list` shows exactly the picked
+      add-ons (installed, enabled, source bundled), nothing else;
+      `~/.local/state/ewe/addons-migrated` names all 13 as considered
+      (nothing migrated); the dock is there only if it was picked
+- [ ] `ewe-install --help` prints the add-on options; `ewe-install --addons
+      ewe.dock` from tty3 works the same way (rescue path)
 - [ ] reboot from disk: greeter lists "Ewe", login lands in the desktop
 - [ ] on the installed system: `sudo pacman -Syu` works; lock screen unlocks
       with the user's password
