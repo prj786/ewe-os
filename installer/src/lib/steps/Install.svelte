@@ -7,7 +7,7 @@
   import { onMount } from "svelte";
   import { invoke } from "@tauri-apps/api/core";
   import { listen } from "@tauri-apps/api/event";
-  import { choices, step } from "../state.js";
+  import { choices, step, visibleSteps, indexOf } from "../state.js";
 
   let log = [];
   let phase = "starting";
@@ -15,16 +15,19 @@
   let done = false;
   let touched = false;    // a verb that writes to the disk has run
   let running = false;
+  let addonsFailed = [];  // [{id, why}] — an add-on that did not install (the OS did)
 
   function push(l) { log = [...log.slice(-400), l]; }
 
   async function run() {
     running = true;
     failed = ""; done = false; touched = false; phase = "checking the connection";
-    log = [];
+    log = []; addonsFailed = [];
     const un = await listen("install-progress", (e) => {
       const p = e.payload;
       if (p.phase) phase = p.phase;
+      // the addons verb reports each add-on once: {"addon": id, "ok": bool}
+      if (p.addon && p.ok === false) addonsFailed = [...addonsFailed, { id: p.addon, why: p.msg || "" }];
       push(p.msg || p.log || JSON.stringify(p));
     });
     try {
@@ -49,6 +52,10 @@
         // a full -Syu in the target so first boot owes nothing; before
         // bootloader, which reads the final kernel + microcode
         ["upgrade", [], null],
+        // the picked add-ons, for the new account, each one best-effort:
+        // the helper logs a failure and goes on — an add-on can never fail
+        // the OS install (they are one click away in Komble afterwards)
+        ...(c.addons.length ? [["addons", [c.addons.join(",")], null]] : []),
         ["bootloader", [], null],
       ];
       for (const [stepName, args, secret] of seq) {
@@ -75,6 +82,12 @@
 <p class="mb-4 max-w-2xl text-sm {failed ? 'text-red-400' : 'text-zinc-400'}">
   {failed || (done ? "Remove the USB stick and restart. The greeter will be waiting." : `current step: ${phase}`)}
 </p>
+{#if done && addonsFailed.length}
+  <p class="mb-4 max-w-2xl text-sm text-amber-400">
+    {addonsFailed.length === 1 ? "One add-on could not be installed" : `${addonsFailed.length} add-ons could not be installed`}
+    ({addonsFailed.map((a) => a.id).join(", ")}) — the system is fine; add {addonsFailed.length === 1 ? "it" : "them"} later in Komble → Add-ons.
+  </p>
+{/if}
 
 <div class="h-72 max-w-2xl overflow-y-auto rounded-xl border border-zinc-800 bg-black/40 p-3 font-mono text-xs text-zinc-400">
   {#each log as l}<div>{l}</div>{/each}
@@ -87,7 +100,7 @@
   </button>
 {:else if failed && !running}
   <div class="mt-6 flex max-w-2xl items-center gap-3">
-    <button class="btn-ghost px-5" onclick={() => step.set(touched ? 5 : 1)}>{touched ? "Back to summary" : "Back to Network"}</button>
+    <button class="btn-ghost px-5" onclick={() => step.set(indexOf($visibleSteps, touched ? "summary" : "network"))}>{touched ? "Back to summary" : "Back to Network"}</button>
     <button class="btn-primary px-5" onclick={run}>Retry</button>
     <span class="text-xs text-zinc-500">
       {touched ? `Retrying starts over: ${$choices.disk?.path} is partitioned again from scratch.` : "Nothing was erased."}

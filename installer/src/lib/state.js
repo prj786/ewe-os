@@ -1,6 +1,6 @@
 // The installer's single source of truth: every screen writes ONE decision
 // here, the Summary restates all of them, and only Install consumes them.
-import { writable } from "svelte/store";
+import { writable, derived } from "svelte/store";
 
 export const choices = writable({
   locale: "en_US.UTF-8",
@@ -19,9 +19,18 @@ export const choices = writable({
   realName: "",
   username: "",
   password: "",
+  // ── add-ons (ewe 0.25: opt-in, nothing pre-checked). Ids out of the live
+  // payload's bundle.json; installed for the new user after ewe-setup, each
+  // one best-effort — a failing add-on never fails the OS install ──
+  addons: [],
 });
 
 export const step = writable(0);
+
+// The add-on catalogue the live system's ewe payload carries: null until the
+// backend answered, [] when the payload has none (an older ewe on the ISO) —
+// then the Add-ons step is not shown at all.
+export const addonsCatalog = writable(null);
 
 // icon: Lucide codepoints — the DE's one icon language
 export const STEPS = [
@@ -30,6 +39,19 @@ export const STEPS = [
   { key: "timeplace", label: "Time & place", icon: 0xE0E8 },
   { key: "disk", label: "Disk", icon: 0xE0ED },
   { key: "user", label: "Your account", icon: 0xE461 },
+  { key: "addons", label: "Add-ons", icon: 0xE29C },
   { key: "summary", label: "Summary", icon: 0xE1D0 },
   { key: "install", label: "Install", icon: 0xE0B2 },
 ];
+
+// The steps actually shown: Add-ons only when the payload offers any.
+// Everything that navigates by position (the rail, Next, "Back to summary")
+// goes through this list and `indexOf(key)`, never a literal index.
+export const visibleSteps = derived(addonsCatalog, ($catalog) =>
+  STEPS.filter((s) => s.key !== "addons" || ($catalog !== null && $catalog.length > 0)),
+);
+
+export function indexOf(steps, key) {
+  const i = steps.findIndex((s) => s.key === key);
+  return i < 0 ? 0 : i;
+}
