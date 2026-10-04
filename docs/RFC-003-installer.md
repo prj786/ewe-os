@@ -60,6 +60,49 @@ the TUI rescue path.)
    the only screen with an (explicitly red) Install button.
 6. **Install** — streamed progress, then Reboot.
 
+### Addendum — the Add-ons step (ewe-os 0.13.0-beta, 2026-10-04)
+
+ewe 0.25 made every first-party extra an **add-on**: shipped inside the
+payload (`/usr/share/ewe/plugins/<id>/` + `bundle.json`), installed on
+nothing by default, one click away in Komble → Add-ons or the desktop's
+Welcome screen. The installer gets the same catalogue as a step of its own,
+**between *Your account* and the Summary** — after the account exists (the
+add-ons are installed *for* it) and before the one screen that restates
+every choice:
+
+- the list is read from the **live system's payload** by the backend
+  (`addons` command: `bundle.json` + each manifest's name, description,
+  icon, category) — no user config has to exist, and an ISO carrying an
+  older ewe (no `bundle.json`) has no such step at all;
+- **nothing is pre-checked** (the opt-in rule is the product; the user's
+  words: *keep as it is now*); the Dock row carries *Recommended if you like
+  a dock*, as on Welcome; the footer says *You can add or remove these any
+  time in Komble → Add-ons*;
+- the picks are ids in `choices.addons`, shown on the Summary, and run as
+  one helper verb, **`addons <id,id,…>`**, after `layer`/`upgrade` and
+  before `bootloader`. The verb delegates to `ewe-install --addons-only`
+  (one implementation, two faces): for every account on the target,
+  `ewe-plugin install <id> --no-restart` **as that user in the chroot**
+  (`runuser`, with the Hyprland/Wayland/D-Bus variables dropped — in a
+  chroot there is nothing to reload, and `--no-restart` keeps the tool away
+  from `systemctl --user`). `ewe-setup` ran just before and, on a fresh
+  account, recorded the add-ons as considered without installing any
+  (`migrate --fresh`) — so nothing is migrated, only what was picked goes in;
+- **an add-on can never fail the OS install**: each one is best-effort, a
+  failure is one `{"phase":"addons","addon":id,"ok":false,"msg":…}` line the
+  Done screen summarises ("add it later in Komble → Add-ons"), and the verb
+  exits 0. Only a malformed id list or an unmounted target is an error.
+
+The TUI face: `ewe-install --addons id,id` (guided or `--layer-only`), an
+interactive prompt in guided mode when no `--addons` was given (Enter =
+none), and `--addons-only id,id` for the helper.
+
+**The live session** is the one place that is *not* opt-in: a fresh 0.25
+account has no dock, and the live stick pins *Install ewe* in the dock. So
+`ewe-live-deploy` installs `ewe.dock` — only that, only for the live user —
+right after `ewe-setup`; the installer also autostarts and sits first in the
+launcher, as before. What an installed system gets is unchanged.
+
 ## Architecture
 
 - Frontend: Svelte, runs as the live user, one step-component per screen.

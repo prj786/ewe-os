@@ -16,6 +16,8 @@ use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::process::Command;
 
 const HELPER: &str = "/usr/lib/ewe-installer/ewe-install-helper";
+/// The live system's ewe payload: the add-ons it carries (ewe 0.25+).
+const PAYLOAD_PLUGINS: &str = "/usr/share/ewe/plugins";
 
 fn estr<E: std::fmt::Display>(e: E) -> String {
     e.to_string()
@@ -163,8 +165,7 @@ async fn timezones() -> Result<Value, String> {
 /// section, one "  code   Name" line each.
 #[tauri::command]
 async fn keyboard_layouts() -> Result<Value, String> {
-    let text =
-        std::fs::read_to_string("/usr/share/X11/xkb/rules/base.lst").map_err(estr)?;
+    let text = std::fs::read_to_string("/usr/share/X11/xkb/rules/base.lst").map_err(estr)?;
     let mut in_layout = false;
     let mut out: Vec<Value> = Vec::new();
     for line in text.lines() {
@@ -192,6 +193,57 @@ async fn locales() -> Result<Value, String> {
         .map(|l| l.split_whitespace().next().unwrap_or("").to_string())
         .collect();
     Ok(json!(l))
+}
+
+/// The add-ons the live ISO's ewe payload offers (`plugins/bundle.json` +
+/// each `plugins/<id>/manifest.json`): id, name, description, icon (a Theme
+/// icon NAME the frontend maps to a Lucide glyph), category, version — the
+/// `available` list of `ewe-plugin list --json`, read straight from the
+/// files so no user config has to exist. An ISO carrying an older ewe has no
+/// bundle.json: the list is empty and the Add-ons step hides itself.
+/// `EWE_PAYLOAD_PLUGINS` overrides the directory (dev, tests).
+fn read_addons(dir: &std::path::Path) -> Vec<Value> {
+    let bundle: Value = match std::fs::read_to_string(dir.join("bundle.json"))
+        .ok()
+        .and_then(|s| serde_json::from_str(&s).ok())
+    {
+        Some(v) => v,
+        None => return Vec::new(),
+    };
+    let Some(plugins) = bundle["plugins"].as_object() else {
+        return Vec::new();
+    };
+    let mut out: Vec<Value> = Vec::new();
+    for (id, meta) in plugins {
+        let Ok(text) = std::fs::read_to_string(dir.join(id).join("manifest.json")) else {
+            continue; // listed but not shipped: nothing to offer
+        };
+        let Ok(m) = serde_json::from_str::<Value>(&text) else {
+            continue;
+        };
+        if m["id"].as_str() != Some(id.as_str()) {
+            continue; // a manifest that is not the add-on bundle.json names
+        }
+        let pick = |k: &str| m[k].as_str().unwrap_or("").to_string();
+        out.push(json!({
+            "id": id,
+            "name": if pick("name").is_empty() { id.clone() } else { pick("name") },
+            "description": pick("description"),
+            "icon": pick("icon"),
+            "category": pick("category"),
+            "version": m["version"].as_str().or(meta["version"].as_str()).unwrap_or(""),
+        }));
+    }
+    out.sort_by(|a, b| a["id"].as_str().cmp(&b["id"].as_str()));
+    out
+}
+
+#[tauri::command]
+async fn addons() -> Result<Value, String> {
+    let dir = std::env::var_os("EWE_PAYLOAD_PLUGINS")
+        .map(std::path::PathBuf::from)
+        .unwrap_or_else(|| std::path::PathBuf::from(PAYLOAD_PLUGINS));
+    Ok(json!(read_addons(&dir)))
 }
 
 /// The suggestion rule from the desktop's dispatcher: TWO providers must
@@ -315,7 +367,11 @@ async fn net_status() -> Result<Value, String> {
 /// [{"ssid", "signal", "secured", "in_use"}]
 #[tauri::command]
 async fn wifi_list(rescan: Option<bool>) -> Result<Value, String> {
-    let rescan = if rescan.unwrap_or(false) { "yes" } else { "auto" };
+    let rescan = if rescan.unwrap_or(false) {
+        "yes"
+    } else {
+        "auto"
+    };
     let out = match nmcli(&[
         "-t",
         "-f",
@@ -342,13 +398,17 @@ async fn wifi_list(rescan: Option<bool>) -> Result<Value, String> {
         let in_use = f[0].trim() == "*";
         let signal = f[1].trim().parse::<i64>().unwrap_or(0);
         let secured = !f[2].trim().is_empty() && f[2].trim() != "--";
-        let e = best.entry(f[3].clone()).or_insert((signal, secured, in_use));
+        let e = best
+            .entry(f[3].clone())
+            .or_insert((signal, secured, in_use));
         if signal > e.0 || in_use {
             *e = (signal.max(e.0), secured, in_use || e.2);
         }
     }
-    let mut list: Vec<(String, i64, bool, bool)> =
-        best.into_iter().map(|(s, (g, sec, u))| (s, g, sec, u)).collect();
+    let mut list: Vec<(String, i64, bool, bool)> = best
+        .into_iter()
+        .map(|(s, (g, sec, u))| (s, g, sec, u))
+        .collect();
     list.sort_by(|a, b| b.3.cmp(&a.3).then(b.1.cmp(&a.1)));
     Ok(json!(list
         .into_iter()
@@ -395,6 +455,7 @@ async fn run_step(
         "sethostname",
         "layer",
         "upgrade",
+        "addons",
         "reboot",
     ];
     if !allowed.contains(&step.as_str()) {
@@ -414,6 +475,7 @@ pub fn run() {
             keyboard_layouts,
             locales,
             suggest_timezone,
+            addons,
             net_status,
             wifi_list,
             wifi_connect,
@@ -421,4 +483,95 @@ pub fn run() {
         ])
         .run(tauri::generate_context!())
         .expect("error while running ewe-installer");
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn tmp(name: &str) -> std::path::PathBuf {
+        let d =
+            std::env::temp_dir().join(format!("ewe-installer-test-{name}-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&d);
+        std::fs::create_dir_all(&d).unwrap();
+        d
+    }
+
+    fn manifest(dir: &std::path::Path, id: &str, body: &str) {
+        std::fs::create_dir_all(dir.join(id)).unwrap();
+        std::fs::write(dir.join(id).join("manifest.json"), body).unwrap();
+    }
+
+    #[test]
+    fn addons_from_a_payload() {
+        let d = tmp("payload");
+        std::fs::write(
+            d.join("bundle.json"),
+            r#"{"plugins":{"ewe.dock":{"version":"1.0.1","default":false,"migrate":true},
+                           "ewe.media":{"version":"1.0.1"},
+                           "ewe.ghost":{"version":"9"},
+                           "ewe.liar":{"version":"1"}}}"#,
+        )
+        .unwrap();
+        manifest(
+            &d,
+            "ewe.media",
+            r#"{"id":"ewe.media","name":"Music","description":"Now playing","icon":"icMusic","category":"Media","version":"1.0.1"}"#,
+        );
+        manifest(
+            &d,
+            "ewe.dock",
+            r#"{"id":"ewe.dock","name":"Dock","description":"A dock","icon":"icApps","category":"Desktop"}"#,
+        );
+        // in bundle.json, but its manifest names another id: not offered
+        manifest(&d, "ewe.liar", r#"{"id":"ewe.other","name":"Liar"}"#);
+        // ewe.ghost: listed, no directory — skipped
+        let got = read_addons(&d);
+        let ids: Vec<&str> = got.iter().map(|a| a["id"].as_str().unwrap()).collect();
+        assert_eq!(ids, vec!["ewe.dock", "ewe.media"]);
+        assert_eq!(got[0]["version"], "1.0.1"); // from bundle.json when the manifest has none
+        assert_eq!(got[0]["category"], "Desktop");
+        assert_eq!(got[1]["icon"], "icMusic");
+        assert_eq!(got[1]["description"], "Now playing");
+        let _ = std::fs::remove_dir_all(&d);
+    }
+
+    #[test]
+    fn no_payload_means_no_addons() {
+        let d = tmp("empty");
+        assert!(read_addons(&d).is_empty());
+        assert!(read_addons(&d.join("does-not-exist")).is_empty());
+        std::fs::write(d.join("bundle.json"), "not json").unwrap();
+        assert!(read_addons(&d).is_empty());
+        let _ = std::fs::remove_dir_all(&d);
+    }
+
+    #[test]
+    fn the_real_payload_when_present() {
+        // the dev box or the ISO: every add-on bundle.json lists is offered
+        let d = std::path::Path::new(PAYLOAD_PLUGINS);
+        if !d.join("bundle.json").exists() {
+            return;
+        }
+        let got = read_addons(d);
+        assert!(!got.is_empty());
+        for a in &got {
+            assert!(a["id"].as_str().unwrap().starts_with("ewe."));
+            assert!(!a["name"].as_str().unwrap().is_empty());
+        }
+    }
+
+    #[test]
+    fn helper_error_prefers_the_json_line() {
+        let tail = vec![
+            "noise".to_string(),
+            r#"{"error":"target not mounted"}"#.to_string(),
+        ];
+        assert_eq!(helper_error(&tail, Some(1)), "target not mounted");
+        assert_eq!(
+            helper_error(&["plain".to_string()], Some(3)),
+            "plain (helper exit Some(3))"
+        );
+        assert_eq!(helper_error(&[], None), "helper failed (exit None)");
+    }
 }

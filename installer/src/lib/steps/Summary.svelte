@@ -1,8 +1,11 @@
 <script>
   // The only screen with an Install button. Every choice in plain words;
   // the destructive one in red.
-  import { choices, step } from "../state.js";
+  import { choices, step, addonsCatalog } from "../state.js";
   $: c = $choices;
+  // the picked add-ons by name, in the catalogue's order (ids only if the
+  // catalogue vanished — it cannot, but the Summary must never show nothing)
+  $: addonNames = c.addons.map((id) => ($addonsCatalog || []).find((a) => a.id === id)?.name || id);
 </script>
 
 <h1 class="mb-1 text-2xl font-bold tracking-tight">Summary</h1>
@@ -12,6 +15,12 @@
   <div class="flex justify-between border-b border-zinc-800 pb-2"><span class="text-zinc-500">Disk</span><span class="text-red-400">{c.disk?.path} ({c.disk?.size}) — will be completely erased</span></div>
   <div class="flex justify-between border-b border-zinc-800 pb-2"><span class="text-zinc-500">Time & place</span><span>{c.timezone} · {c.locale}</span></div>
   <div class="flex justify-between border-b border-zinc-800 pb-2"><span class="text-zinc-500">Account</span><span>{c.realName} ({c.username}) on “{c.hostname}”</span></div>
+  {#if $addonsCatalog !== null && $addonsCatalog.length > 0}
+    <div class="flex justify-between gap-6 border-b border-zinc-800 pb-2">
+      <span class="shrink-0 text-zinc-500">Add-ons</span>
+      <span class="text-right">{addonNames.length ? addonNames.join(", ") : "none — add them later in Komble → Add-ons"}</span>
+    </div>
+  {/if}
 </div>
 
 <div class="card mt-6 max-w-xl p-4">

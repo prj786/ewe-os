@@ -286,6 +286,36 @@ ewe-settings 0.12.2-beta; the DE stays at 0.12.3-beta.
       the compositor would
 - [ ] casting (ewe-cast) still does not work — next
 
+## 0.13.0-beta — add-ons in the installer (2026-10-04)
+
+The ISO for ewe 0.25.0-beta, where every first-party extra became an
+**add-on**: shipped in the payload, installed on nothing by default
+(the dock, clipboard history, screenshots, passwords, music, Places, phone,
+mail, Cast to TV, Insomnia, system monitor, SSH, VPN). The installer follows
+the same rule — nothing pre-checked — and offers them in one place.
+
+- [x] **Add-ons step** in `ewe-installer`, between *Your account* and the
+      Summary: every add-on the live payload carries
+      (`/usr/share/ewe/plugins/bundle.json` + manifests, read by the
+      backend — no user config needed), grouped by category, Lucide glyph,
+      name, one line, a checkbox; the Dock row says *Recommended if you
+      like a dock*; "You can add or remove these any time in Komble →
+      Add-ons." The Summary restates the picks. An ISO carrying an older
+      ewe (no `bundle.json`) shows no such step
+- [x] **`addons` helper verb** → `ewe-install --addons-only id,id`: after
+      `ewe-setup` (which, on a fresh account, runs `migrate --fresh` and
+      installs nothing) each picked id is `ewe-plugin install <id>
+      --no-restart` **as the new user in the chroot**; a failing add-on is
+      reported (`{"addon":id,"ok":false}`, shown on the Done screen) and
+      never fails the install
+- [x] **`ewe-install --addons id,id`** for the TUI/rescue path, and an
+      interactive add-on prompt in guided mode (Enter = none); `--help`
+- [x] **Live session keeps a dock**: `ewe-live-deploy` installs `ewe.dock`
+      for the live user only — the pinned *Install ewe* needs a dock to
+      sit in. Installed systems stay opt-in
+- [ ] QEMU pass of the whole flow with the CI-built ISO (`./run-iso.sh`),
+      incl. a pick of 2–3 add-ons and a reboot into the installed disk
+
 ## 1.0.0 — "Dolly" · the release
 
 No suffix, no beta tag — the official ewe OS. Named for the sheep that
