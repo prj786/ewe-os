@@ -19,17 +19,18 @@ export const choices = writable({
   realName: "",
   username: "",
   password: "",
-  // ── add-ons (ewe 0.25: opt-in, nothing pre-checked). Ids out of the live
-  // payload's bundle.json; installed for the new user after ewe-setup, each
-  // one best-effort — a failing add-on never fails the OS install ──
+  // ── first-party plugins (ewe 0.25: opt-in, nothing pre-checked; the UI
+  // says "Plugins", the key stays `addons`). Ids out of the live payload's
+  // bundle.json; installed for the new user after ewe-setup, each one
+  // best-effort — a failing plugin never fails the OS install ──
   addons: [],
 });
 
 export const step = writable(0);
 
-// The add-on catalogue the live system's ewe payload carries: null until the
-// backend answered, [] when the payload has none (an older ewe on the ISO) —
-// then the Add-ons step is not shown at all.
+// The first-party plugin catalogue the live system's ewe payload carries:
+// null until the backend answered, [] when the payload has none (an older
+// ewe on the ISO) — then the Plugins step is not shown at all.
 export const addonsCatalog = writable(null);
 
 // icon: Lucide codepoints — the DE's one icon language
@@ -39,12 +40,12 @@ export const STEPS = [
   { key: "timeplace", label: "Time & place", icon: 0xE0E8 },
   { key: "disk", label: "Disk", icon: 0xE0ED },
   { key: "user", label: "Your account", icon: 0xE461 },
-  { key: "addons", label: "Add-ons", icon: 0xE29C },
+  { key: "addons", label: "Plugins", icon: 0xE29C },
   { key: "summary", label: "Summary", icon: 0xE1D0 },
   { key: "install", label: "Install", icon: 0xE0B2 },
 ];
 
-// The steps actually shown: Add-ons only when the payload offers any.
+// The steps actually shown: Plugins only when the payload offers any.
 // Everything that navigates by position (the rail, Next, "Back to summary")
 // goes through this list and `indexOf(key)`, never a literal index.
 export const visibleSteps = derived(addonsCatalog, ($catalog) =>

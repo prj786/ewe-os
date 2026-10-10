@@ -17,8 +17,9 @@
   const COMPONENTS = { welcome: Welcome, network: Network, timeplace: TimePlace, disk: Disk,
                        user: User, addons: Addons, summary: Summary, install: Install };
 
-  // The add-on catalogue is read once, from the live payload — an older ewe
-  // on the ISO has none, and then the Add-ons step simply is not there.
+  // The first-party plugin catalogue is read once, from the live payload —
+  // an older ewe on the ISO has none, and then the Plugins step simply is
+  // not there.
   // Outside Tauri (`npm run dev` in a browser) `?mock` serves the fixture
   // and `?step=<key>` opens a screen directly — the screenshot recipe.
   onMount(async () => {

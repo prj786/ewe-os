@@ -1,5 +1,5 @@
-// Dev mock of the `addons` backend command — the 13 add-ons of ewe 0.25's
-// payload, copied from their manifests, so the Add-ons step renders in a
+// Dev mock of the `addons` backend command — the 13 first-party plugins of
+// ewe 0.25's payload, copied from their manifests, so the Plugins step renders in a
 // plain browser (`npm run dev`, open /?mock&step=addons). Only used when the
 // page runs OUTSIDE Tauri; the real installer reads the live payload.
 export const MOCK_ADDONS = [
@@ -22,7 +22,7 @@ export const MOCK_ADDONS = [
   {
     "id": "ewe.dock",
     "name": "Dock",
-    "description": "A centred bottom dock on the main screen: app launcher, Overview, Komble, the Pen, one box per workspace with its windows, and the dock items other add-ons provide.",
+    "description": "A centred bottom dock on the main screen: app launcher, Overview, Komble, the Pen, one box per workspace with its windows, and the dock items other plugins provide.",
     "icon": "icApps",
     "category": "Desktop",
     "version": "1.0.1"

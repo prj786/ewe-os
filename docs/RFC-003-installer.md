@@ -62,6 +62,12 @@ the TUI rescue path.)
 
 ### Addendum — the Add-ons step (ewe-os 0.13.0-beta, 2026-10-04)
 
+*Renamed since (ewe 0.25.1): the UI calls these **plugins** — the step is
+"Plugins", the pointer is Komble → Plugins. The `addons` verb and command,
+`choices.addons`, `--addons`/`--addons-only` and the machine-read `ok
+add-on <id>` / `!! add-on <id>:` lines keep the old word. The text below is
+as decided.*
+
 ewe 0.25 made every first-party extra an **add-on**: shipped inside the
 payload (`/usr/share/ewe/plugins/<id>/` + `bundle.json`), installed on
 nothing by default, one click away in Komble → Add-ons or the desktop's

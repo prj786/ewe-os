@@ -16,21 +16,21 @@ session and installed systems roll forward with plain `pacman -Syu`.
   (autologin as the `ewe` live user; the DE deploys itself on first start via
   `ewe-setup` from the preinstalled `ewe` package, at boot, under the
   plymouth splash). The live user — and only the live user — also gets the
-  **dock add-on**, so *Install ewe* has a dock to be pinned in (since ewe
+  **Dock plugin**, so *Install ewe* has a dock to be pinned in (since ewe
   0.25 a fresh account has no dock; `ewe-live-deploy`). A root rescue
   console lives on tty3 (Ctrl+Alt+F3); tty1 belongs to the greeter.
 - **`ewe-installer`** — the graphical installer (Tauri; RFC-003 in
-  `docs/`): keyboard, network, time & place, disk, account, **add-ons**,
-  summary, install. The Add-ons step lists every first-party extra the
+  `docs/`): keyboard, network, time & place, disk, account, **plugins**,
+  summary, install. The Plugins step lists every first-party plugin the
   payload carries (dock, clipboard, screenshots, music, Places, phone,
-  mail, Cast to TV, …) with nothing pre-checked — add-ons are opt-in — and
+  mail, Cast to TV, …) with nothing pre-checked — they are opt-in — and
   the picked ones are installed for the new account at the end of the run,
   each one best-effort.
 - **`ewe-install`** — the same install from a terminal (rescue/headless):
   archinstall handles disks, locale, users and bootloader; the wrapper then
   layers the `[ewe]` repo, the `ewe` package, the greeter stack (greetd →
   cage → Quickshell greeter), the per-user deploy for every created account
-  and the add-ons (`--addons ewe.dock,ewe.media`, or the prompt). The
+  and the plugins (`--addons ewe.dock,ewe.media`, or the prompt). The
   installed machine boots to the graphical greeter with the desktop ready.
 
 ## Build
