@@ -204,23 +204,25 @@ layer)
     say layer "done"
     ;;
 
-# ── addons <id,id,…> — the picked add-ons, for every account on the target ──
-# ewe 0.25: add-ons are opt-in; the GUI's Add-ons step records ids, this verb
+# ── addons <id,id,…> — the picked first-party plugins, for every account ────
+# ewe 0.25: they are opt-in (the UI says "Plugins"; the verb, the JSON key
+# and the parsed lines below keep the old "add-on" word — a contract with
+# ewe-install and the GUI). The GUI's Plugins step records ids, this verb
 # installs them AS THE NEW USER in the chroot (`ewe-plugin install <id>
 # --no-restart`, the ewe-install loop — one implementation, two faces).
-# Best-effort by contract: an add-on that fails is reported with
-# {"addon":id,"ok":false} and the verb still exits 0 — an add-on can never
-# fail the OS install; Komble → Add-ons has it afterwards. Only a malformed
+# Best-effort by contract: a plugin that fails is reported with
+# {"addon":id,"ok":false} and the verb still exits 0 — a plugin can never
+# fail the OS install; Komble → Plugins has it afterwards. Only a malformed
 # id list or an unmounted target is an error here.
 addons)
     ids="${1:-}"
     mountpoint -q "$MNT" || die "target not mounted"
     [[ "$ids" =~ ^[a-z0-9][a-z0-9_-]*(\.[a-z0-9][a-z0-9_-]*)+(,[a-z0-9][a-z0-9_-]*(\.[a-z0-9][a-z0-9_-]*)+)*$ ]] \
-        || die "add-on ids must be dotted ids separated by commas (ewe.dock,ewe.media)"
-    say addons "installing add-ons: ${ids//,/ }"
+        || die "plugin ids must be dotted ids separated by commas (ewe.dock,ewe.media)"
+    say addons "installing plugins: ${ids//,/ }"
     # ewe-install's lines, ANSI stripped; its `ok add-on <id>` / `!! add-on
-    # <id>: <why>` lines become the per-add-on result objects the GUI shows,
-    # everything else is log.
+    # <id>: <why>` lines (machine-read — keep the wording) become the
+    # per-plugin result objects the GUI shows, everything else is log.
     EWE_INSTALL_MNT="$MNT" /usr/local/bin/ewe-install --addons-only "$ids" 2>&1 | python3 -c '
 import json, re, sys
 ansi = re.compile(r"\x1b\[[0-9;]*m")
@@ -233,7 +235,7 @@ for raw in sys.stdin:
     if m:
         print(json.dumps({"phase": "addons", "addon": m.group(1), "ok": False, "msg": m.group(2)[:200]}), flush=True); continue
     print(json.dumps({"phase": "addons", "log": l[:160]}), flush=True)
-' || say addons "the add-on step ended early — the system is complete; add-ons are one click away in Komble → Add-ons"
+' || say addons "the plugin step ended early — the system is complete; plugins are one click away in Komble → Plugins"
     say addons "done"
     ;;
 

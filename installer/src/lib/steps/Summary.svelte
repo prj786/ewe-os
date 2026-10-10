@@ -3,7 +3,7 @@
   // the destructive one in red.
   import { choices, step, addonsCatalog } from "../state.js";
   $: c = $choices;
-  // the picked add-ons by name, in the catalogue's order (ids only if the
+  // the picked plugins by name, in the catalogue's order (ids only if the
   // catalogue vanished — it cannot, but the Summary must never show nothing)
   $: addonNames = c.addons.map((id) => ($addonsCatalog || []).find((a) => a.id === id)?.name || id);
 </script>
@@ -17,8 +17,8 @@
   <div class="flex justify-between border-b border-zinc-800 pb-2"><span class="text-zinc-500">Account</span><span>{c.realName} ({c.username}) on “{c.hostname}”</span></div>
   {#if $addonsCatalog !== null && $addonsCatalog.length > 0}
     <div class="flex justify-between gap-6 border-b border-zinc-800 pb-2">
-      <span class="shrink-0 text-zinc-500">Add-ons</span>
-      <span class="text-right">{addonNames.length ? addonNames.join(", ") : "none — add them later in Komble → Add-ons"}</span>
+      <span class="shrink-0 text-zinc-500">Plugins</span>
+      <span class="text-right">{addonNames.length ? addonNames.join(", ") : "none — add them later in Komble → Plugins"}</span>
     </div>
   {/if}
 </div>

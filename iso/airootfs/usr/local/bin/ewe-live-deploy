@@ -26,13 +26,13 @@ ewe-setup || exit 1
 conf="$DEST/bin/ewe-conf"
 qs="$DEST/dotfiles/quickshell"
 
-# Since ewe 0.25 the dock is an ADD-ON and a fresh account has none — which
+# Since ewe 0.25 the dock is a PLUGIN and a fresh account has none — which
 # is right for an installed machine (opt-in, the Welcome screen and Komble →
-# Add-ons offer it) and wrong for a live stick: the pinned "Install ewe" would
+# Plugins offer it) and wrong for a live stick: the pinned "Install ewe" would
 # have no dock to sit in, and a desktop someone is trying for the first time
 # should show the shape it can take. So the LIVE USER, and only the live
-# user, gets the dock — nothing else: the add-ons stay opt-in on the
-# installed system, and the installer's own Add-ons step is where the user
+# user, gets the dock — nothing else: the other plugins stay opt-in on the
+# installed system, and the installer's own Plugins step is where the user
 # picks them. Best-effort and silent on an older payload (no plugins/).
 # --no-restart: the shell is not running yet (this runs under the splash);
 # no Hyprland/Wayland variables are set here, so the tool's keybind writer

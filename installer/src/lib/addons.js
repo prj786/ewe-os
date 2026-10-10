@@ -1,5 +1,6 @@
-// The add-on catalogue, as the installer shows it (ewe 0.25+, add-ons are
-// opt-in — docs/PLUGINS.md "Add-ons"). The backend reads the LIVE system's
+// The first-party plugin catalogue, as the installer shows it (ewe 0.25+,
+// they are opt-in — docs/PLUGINS.md "First-party plugins"; called "add-ons"
+// before 0.25.1, hence the file and identifier names). The backend reads the LIVE system's
 // payload (/usr/share/ewe/plugins/bundle.json + each manifest.json); this
 // file turns the manifests' Theme icon NAMES into Lucide glyphs and groups
 // the rows the way the Welcome screen and Komble present them.
@@ -22,7 +23,7 @@ const GLYPHS = {
   icSsh: 0xe20a,        // square-terminal — ssh
   icVpn: 0xe1ff,        // shield-check — vpn
 };
-export const GLYPH_FALLBACK = 0xe29c; // puzzle — an add-on without a known icon
+export const GLYPH_FALLBACK = 0xe29c; // puzzle — a plugin without a known icon
 export const GLYPH_CHECK = 0xe06c;    // check — the checkbox tick
 
 export function glyphFor(icon) {

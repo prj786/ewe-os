@@ -6,7 +6,7 @@
 #   [ewe] repo → target pacman.conf · the `ewe` package · the greeter stack
 #   (greetd → cage → Quickshell greeter, exactly install.sh phase 30's
 #   recipe, read from the package payload) · per-user deploy for every human
-#   account · the add-ons the user picked — so the installed machine boots
+#   account · the plugins the user picked — so the installed machine boots
 #   straight into the graphical greeter with the desktop ready.
 #
 # The live ISO's pacman.conf already carries [ewe], so pacstrap resolves the
@@ -14,32 +14,33 @@
 # download the world twice.
 #
 #   ewe-install                      guided: archinstall, then the ewe layer
-#                                    (asks which add-ons to install)
-#   ewe-install --addons ID,ID       guided, with the add-ons decided up front
+#                                    (asks which plugins to install)
+#   ewe-install --addons ID,ID       guided, with the plugins decided up front
 #   ewe-install --layer-only [--addons ID,ID]
 #                                    skip archinstall — layer onto whatever is
 #                                    already mounted at /mnt/archinstall (resume
 #                                    after an interrupted run, or scripted
 #                                    installs; ewe-installer's `layer` verb)
-#   ewe-install --addons-only ID,ID  only the add-ons, for every account on
+#   ewe-install --addons-only ID,ID  only the plugins, for every account on
 #                                    the mounted target (ewe-installer's
 #                                    `addons` verb; the layer must be done)
 #   ewe-install --help
 #
-# Add-ons (ewe 0.25): every first-party extra — the dock, clipboard history,
-# screenshots, music, Places, phone, mail, Cast to TV… — ships in the payload
-# but is NOT installed on a fresh account; `ewe-setup` records them as
-# considered (`ewe-plugin migrate --fresh`) and installs none. The ids given
-# here are installed for the new user with `ewe-plugin install <id>
-# --no-restart` inside the chroot, each one best-effort: a failing add-on is
-# reported (`!! add-on <id>: …`) and never aborts the install. The list of
-# ids is the live payload's: `ewe-plugin list --json` → available[], or
-# /usr/share/ewe/plugins/bundle.json.
+# Plugins (ewe 0.25): every first-party extra — the dock, clipboard history,
+# screenshots, music, Places, phone, mail, Cast to TV… — is a plugin that
+# ships in the payload but is NOT installed on a fresh account; `ewe-setup`
+# records them as considered (`ewe-plugin migrate --fresh`) and installs
+# none. The ids given here are installed for the new user with `ewe-plugin
+# install <id> --no-restart` inside the chroot, each one best-effort: a
+# failing plugin is reported (`!! add-on <id>: …` — the flags and these
+# lines keep the old "add-on" word: ewe-installer's helper reads them) and
+# never aborts the install. The list of ids is the live payload's:
+# `ewe-plugin list --json` → available[], or /usr/share/ewe/plugins/bundle.json.
 set -uo pipefail
 
 MNT="${EWE_INSTALL_MNT:-/mnt/archinstall}"
 REPO_STANZA='\n[ewe]\nSigLevel = Required DatabaseRequired\nServer = https://github.com/prj786/ewe-repo/releases/download/x86_64\n'
-# the LIVE system's payload — where the add-on catalogue is read from
+# the LIVE system's payload — where the plugin catalogue is read from
 LIVE_PLUGINS="${EWE_PAYLOAD_PLUGINS:-/usr/share/ewe/plugins}"
 
 say() { printf '\033[1;36m::\033[0m %s\n' "$*"; }
@@ -51,7 +52,7 @@ usage() {
 }
 
 # ── the chroot seams: everything that runs ON THE TARGET goes through these
-# two, so the add-on loop can be exercised against a sandbox (tests override
+# two, so the plugin loop can be exercised against a sandbox (tests override
 # them) and so a future change of chroot tool is one line ──────────────────
 chroot_root() { arch-chroot "$MNT" "$@"; }
 # as a target user: runuser (no -m) resets HOME/USER/LOGNAME/SHELL from passwd;
@@ -67,7 +68,7 @@ chroot_user() {
 valid_addon_id() { [[ "$1" =~ ^[a-z0-9][a-z0-9_-]{0,31}(\.[a-z0-9][a-z0-9_-]{0,31})+$ ]]; }
 valid_addon_list() { [ -n "$1" ] && [[ "$1" =~ ^[a-z0-9][a-z0-9_.-]*(,[a-z0-9][a-z0-9_.-]*)*$ ]]; }
 
-# The live payload's catalogue, one add-on per line: "id<TAB>name — description"
+# The live payload's catalogue, one plugin per line: "id<TAB>name — description"
 addon_catalogue() {
     [ -r "$LIVE_PLUGINS/bundle.json" ] || return 1
     python3 - "$LIVE_PLUGINS" <<'PY'
@@ -90,8 +91,9 @@ PY
 
 # install_addons <user> <id,id,…> — the loop (one implementation, two faces:
 # the TUI prints these lines, ewe-installer's helper turns `ok add-on <id>`
-# and `!! add-on <id>: <why>` into its per-add-on result objects).
-# Never returns non-zero because of an add-on.
+# and `!! add-on <id>: <why>` into its per-plugin result objects — keep
+# those two prefixes word for word, the helper's regex reads them).
+# Never returns non-zero because of a plugin.
 install_addons() {
     local u="$1" ids="$2" id out rc verdict why pkgs
     local -a list
@@ -99,10 +101,10 @@ install_addons() {
     for id in "${list[@]}"; do
         [ -n "$id" ] || continue
         if ! valid_addon_id "$id"; then
-            echo "!! add-on $id: not an add-on id (expected something like ewe.dock)"
+            echo "!! add-on $id: not a plugin id (expected something like ewe.dock)"
             continue
         fi
-        say "add-on $id for '$u'"
+        say "plugin $id for '$u'"
         # the tool prints ONE JSON object (ok/error/missing) and exits 1 on
         # an unknown id — never let a failure here stop the loop. The copy
         # ewe-setup just deployed into the home is the one that matches that
@@ -130,20 +132,20 @@ else:
             OK*)
                 pkgs="${verdict#OK}"; pkgs="${pkgs#	}"
                 if [ -n "$pkgs" ]; then
-                    # declared package needs the add-on reported missing — the
+                    # declared package needs the plugin reported missing — the
                     # job Komble does on a running machine (ewe's deps cover
                     # them today, so this is normally a no-op)
-                    say "add-on $id needs: $pkgs"
+                    say "plugin $id needs: $pkgs"
                     # shellcheck disable=SC2086
                     chroot_root pacman -S --noconfirm --needed $pkgs \
-                        || echo "!! packages for add-on $id ($pkgs) could not be installed — the add-on is enabled; install them later with Komble"
+                        || echo "!! packages for plugin $id ($pkgs) could not be installed — the plugin is enabled; install them later with Komble"
                 fi
                 ok "add-on $id installed and enabled for '$u'"
                 ;;
             *)
                 why="${verdict#ERR}"; why="${why#	}"
                 [ -n "$why" ] || why="ewe-plugin install exited $rc"
-                echo "!! add-on $id: $why — add it later in Komble → Add-ons"
+                echo "!! add-on $id: $why — add it later in Komble → Plugins"
                 ;;
         esac
     done
@@ -195,9 +197,9 @@ done
 
 [ "$(id -u)" = 0 ] || exec sudo "$0" "${ORIG_ARGS[@]}"
 
-# ── add-ons only (ewe-installer's `addons` verb) ─────────────────────────────
+# ── plugins only (ewe-installer's `addons` verb) ─────────────────────────────
 if [ "$MODE" = addons ]; then
-    mountpoint -q "$MNT" || die "target not mounted at $MNT — nothing to install add-ons into."
+    mountpoint -q "$MNT" || die "target not mounted at $MNT — nothing to install plugins into."
     found_user=0
     while IFS= read -r u; do
         found_user=1
@@ -220,15 +222,15 @@ if [ "$MODE" = guided ]; then
     · when it finishes, answer NO to "chroot into installation" — this
       script continues from there
 EOF
-    # Add-ons — asked here, before archinstall, so the whole run is
-    # unattended afterwards. Nothing is pre-selected (add-ons are opt-in);
-    # Enter means none, and Komble → Add-ons has them all later.
+    # Plugins — asked here, before archinstall, so the whole run is
+    # unattended afterwards. Nothing is pre-selected (they are opt-in);
+    # Enter means none, and Komble → Plugins has them all later.
     if [ "$ADDONS_GIVEN" = 0 ] && catalogue="$(addon_catalogue)" && [ -n "$catalogue" ]; then
         cat <<'EOF'
 
-  Add-ons — extras that ship with ewe but are not installed until you ask.
+  Plugins — extras that ship with ewe but are not installed until you ask.
   Type the ids you want, separated by commas (Enter for none; everything
-  stays one click away in Komble → Add-ons):
+  stays one click away in Komble → Plugins):
 EOF
         printf '%s\n' "$catalogue" | while IFS=$'\t' read -r id rest; do
             hint=""; [ "$id" = ewe.dock ] && hint="   (recommended if you like a dock)"
@@ -236,7 +238,7 @@ EOF
         done
         echo
         while :; do
-            read -rp "  add-ons [none]: " ADDONS
+            read -rp "  plugins [none]: " ADDONS
             ADDONS="${ADDONS// /}"
             [ -z "$ADDONS" ] && break
             valid_addon_list "$ADDONS" && break
@@ -391,7 +393,7 @@ ok "branded silent boot: ewe splash + microcode + ewe os-release"
 
 # 3 · per-user deploy + session entry for every human account archinstall made.
 # ewe-setup on a FRESH home runs `ewe-plugin seed` + `migrate --fresh`: the
-# add-ons are recorded as considered and NONE is installed (0.25, opt-in);
+# plugins are recorded as considered and NONE is installed (0.25, opt-in);
 # the ones picked for this install follow right after it.
 found_user=0
 while IFS= read -r u; do
@@ -416,5 +418,5 @@ cat <<'EOF'
   ✓ done — reboot into ewe.
     The greeter lists "Ewe"; log in with the account you created.
     Later: `sudo pacman -Syu` updates the whole desktop; Komble is the store
-    and Komble → Add-ons has every extra that ships with ewe.
+    and Komble → Plugins has every extra that ships with ewe.
 EOF

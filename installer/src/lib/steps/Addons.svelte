@@ -1,10 +1,11 @@
 <script>
-  // Add-ons — every first-party extra the ewe payload carries, NONE of them
-  // pre-checked (ewe 0.25: add-ons are opt-in; the same list and words as
-  // the desktop's Welcome screen). The catalogue comes from the live ISO's
-  // own payload (App.svelte → `addons`); picking here only records ids —
-  // they are installed for the new account at the end of the run, each one
-  // best-effort, so a failing add-on can never fail the OS install.
+  // Plugins — every first-party plugin the ewe payload carries, NONE of them
+  // pre-checked (ewe 0.25: they are opt-in; the same list and words as the
+  // desktop's Welcome screen; the code keeps the old "addons" names). The
+  // catalogue comes from the live ISO's own payload (App.svelte → `addons`);
+  // picking here only records ids — they are installed for the new account
+  // at the end of the run, each one best-effort, so a failing plugin can
+  // never fail the OS install.
   import { choices, addonsCatalog } from "../state.js";
   import { glyphFor, groupAddons, GLYPH_CHECK, DOCK_ID, DOCK_HINT } from "../addons.js";
 
@@ -19,10 +20,10 @@
   }
 </script>
 
-<h1 class="mb-1 text-2xl font-bold tracking-tight">Add-ons</h1>
+<h1 class="mb-1 text-2xl font-bold tracking-tight">Plugins</h1>
 <p class="mb-6 max-w-xl text-sm text-zinc-400">
   A few extras ship with ewe — the dock, music, Places, your phone, mail, Cast to TV and more.
-  None is installed until you pick it. Choose what you want now; the rest is one click away in Komble → Add-ons.
+  None is installed until you pick it. Choose what you want now; the rest is one click away in Komble → Plugins.
 </p>
 
 <div class="max-w-xl">
@@ -52,5 +53,5 @@
 
 <p class="mt-4 max-w-xl text-xs text-zinc-500">
   {$choices.addons.length === 0 ? "Nothing selected." : `${$choices.addons.length} selected.`}
-  You can add or remove these any time in Komble → Add-ons.
+  You can add or remove these any time in Komble → Plugins.
 </p>

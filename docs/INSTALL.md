@@ -41,8 +41,8 @@ You land straight on the ewe desktop, running from the stick, with
 **Install ewe** pinned first in the dock and the launcher (and it opens by
 itself). Everything you see is the real thing: try the Control Center
 (Super + N), Komble, the settings. One difference from an installed ewe: the
-live stick has the dock add-on installed so *Install ewe* has a place to
-sit — a fresh install starts without it unless you pick it on the Add-ons
+live stick has the Dock plugin installed so *Install ewe* has a place to
+sit — a fresh install starts without it unless you pick it on the Plugins
 screen. Nothing is written to your disks until you press the red Install
 button on the Summary screen.
 
@@ -58,21 +58,21 @@ button on the Summary screen.
 4. **Disk** — pick the disk. **The whole disk is erased**; the warning is
    red here and again on the Summary.
 5. **Your account** — name, username, password, computer name.
-6. **Add-ons** — the extras that ship with ewe but are not installed
+6. **Plugins** — the extras that ship with ewe but are not installed
    until you ask: the dock, clipboard history, screenshots, passwords,
    music, Places, your phone, mail, Cast to TV, Insomnia, system monitor,
    SSH, VPN. Nothing is pre-checked; tick what you want (the Dock row says
    *Recommended if you like a dock*). You can add or remove these any time
-   in **Komble → Add-ons**, so an empty pick is a fine answer.
-7. **Summary** — everything you chose (add-ons included), the *Decided by
+   in **Komble → Plugins**, so an empty pick is a fine answer.
+7. **Summary** — everything you chose (plugins included), the *Decided by
    ewe* panel, and the only Install button.
 8. **Install** — a last connectivity check, then streamed progress:
    the base system, the desktop, then **updating the installed system**
-   so the first boot owes no updates, your add-ons, then **Reboot**.
+   so the first boot owes no updates, your plugins, then **Reboot**.
    Remove the stick when the screen goes dark. If a step fails, the screen
    says why and offers **Retry** (the disk is partitioned again from
-   scratch) or **Back**. An add-on that could not be installed never fails
-   the install: the Done screen names it and Komble → Add-ons has it later.
+   scratch) or **Back**. A plugin that could not be installed never fails
+   the install: the Done screen names it and Komble → Plugins has it later.
 
 The installed machine boots through the ewe splash into the graphical
 greeter. The first login opens the **Welcome** flow: connect to the
