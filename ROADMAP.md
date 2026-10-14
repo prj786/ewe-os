@@ -123,6 +123,8 @@ What a stranger sees in their first ten minutes:
 - [x] Time & Place: language/locale picker (2026-09-01) — SUPPORTED list
       with human labels, locale-gen + localectl behind one pkexec prompt
 - [x] light mode deleted — ewe is dark-only by decision (2026-09-01)
+- [x] light mode back (owner, 2026-10-14) — Ewe Light and any light scheme;
+  every toolkit follows the scheme's variant, dark stays the default
 
 ## 0.8-alpha — ready for metal
 
