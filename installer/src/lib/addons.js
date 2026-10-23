@@ -16,8 +16,9 @@ const GLYPHS = {
   icCpu: 0xe0a9,        // cpu — system monitor
   icEye: 0xe0ba,        // eye — insomnia
   icFolder: 0xe0d7,     // folder — places
-  icLock: 0xe10b,       // lock — passwords
+  icLock: 0xe10b,       // lock — passwords, Safe
   icMail: 0xe10f,       // mail
+  icMessage: 0xe116,    // message-circle — Shaun, Slack
   icMusic: 0xe122,      // music
   icPhone: 0xe163,      // smartphone — phone
   icSsh: 0xe20a,        // square-terminal — ssh

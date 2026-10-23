@@ -22,8 +22,8 @@ session and installed systems roll forward with plain `pacman -Syu`.
 - **`ewe-installer`** — the graphical installer (Tauri; RFC-003 in
   `docs/`): keyboard, network, time & place, disk, account, **plugins**,
   summary, install. The Plugins step lists every first-party plugin the
-  payload carries (dock, clipboard, screenshots, music, Places, phone,
-  mail, Cast to TV, …) with nothing pre-checked — they are opt-in — and
+  payload carries (dock, Safe, Shaun, clipboard, screenshots, music,
+  Places, phone, mail, Slack, Cast to TV, …) with nothing pre-checked — they are opt-in — and
   the picked ones are installed for the new account at the end of the run,
   each one best-effort.
 - **`ewe-install`** — the same install from a terminal (rescue/headless):
@@ -37,7 +37,7 @@ session and installed systems roll forward with plain `pacman -Syu`.
 
 ```sh
 sudo pacman -S archiso
-sudo ./build.sh          # → out/ewe-0.1-alpha-x86_64.iso
+sudo ./build.sh          # → out/ewe-<VERSION>-x86_64.iso
 ./run-iso.sh             # boot it in QEMU/KVM (UEFI)
 ```
 
@@ -52,5 +52,10 @@ uses), and greetd + the live user service are enabled on top.
 | [ewe](https://github.com/prj786/ewe) | the desktop environment (Hyprland + Quickshell) + `ewe` package |
 | [komble-arch](https://github.com/prj786/komble-arch) | Komble — the software manager |
 | [ewe-settings](https://github.com/prj786/ewe-settings) | the Settings app |
+| [ewe-sync](https://github.com/prj786/ewe-sync) | the account app — your Nextcloud, sync, folders |
+| [ewe-browser](https://github.com/prj786/ewe-browser) | ewe browser — the desktop's browser |
+| [ewe-safe](https://github.com/prj786/ewe-safe) | Safe — ewe's password manager (opt-in, with the Safe plugin) |
+| [ewe-companion](https://github.com/prj786/ewe-companion) | Shaun — the desktop companion (opt-in, with the Shaun plugin) |
+| [ewe-cast](https://github.com/prj786/ewe-cast) | casting to a TV (the Cast plugin's engine) |
 | [ewe-repo](https://github.com/prj786/ewe-repo) | the `[ewe]` pacman repository |
 | ewe-os | this — the ISO |

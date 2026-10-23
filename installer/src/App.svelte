@@ -77,7 +77,7 @@
         </div>
       {/each}
     </nav>
-    <div class="px-4 pb-4 text-xs text-zinc-600">alpha — every choice is shown again before anything touches a disk</div>
+    <div class="px-4 pb-4 text-xs text-zinc-600">beta — every choice is shown again before anything touches a disk</div>
   </aside>
 
   <!-- step -->
