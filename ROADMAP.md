@@ -318,6 +318,24 @@ the same rule — nothing pre-checked — and offers them in one place.
 - [ ] QEMU pass of the whole flow with the CI-built ISO (`./run-iso.sh`),
       incl. a pick of 2–3 add-ons and a reboot into the installed disk
 
+## 0.14.0-beta — the ISO for ewe 0.35 (2026-10-23)
+
+The first ISO since 0.13.0-beta. Everything below arrived through the
+`[ewe]` repo and is preinstalled on the image (the ISO pins nothing):
+ewe 0.35 — the Overview that spreads your windows, Super+Z minimize,
+workspaces per display, light mode; ewe browser as the desktop's browser;
+Safe (ewe's password manager) and Shaun (the desktop companion) as opt-in
+plugins with their packages; the Slack plugin.
+
+- [x] the Plugins step lists all 16 plugins the payload carries (it reads
+      the live payload, so the new ones appear with no code change); Shaun
+      and Slack get their own glyph (`icMessage`), not the puzzle fallback
+- [x] a username you clear stays cleared (ewe-os#13, parked since 0.12.x)
+- [x] the rail's footer says *beta*, not *alpha*
+- [x] docs: the plugin list in README / INSTALL.md, TESTING.md counts 16,
+      the README's repo table names every first-party repo
+- [ ] QEMU pass of the whole flow with the CI-built ISO (`./run-iso.sh`)
+
 ## 1.0.0 — "Dolly" · the release
 
 No suffix, no beta tag — the official ewe OS. Named for the sheep that

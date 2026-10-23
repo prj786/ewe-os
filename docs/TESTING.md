@@ -39,13 +39,13 @@ reads solid black even while the guest renders.
 
 - [ ] QEMU with a blank virtio disk: run "Install ewe" (or `ewe-install`),
       minimal archinstall config, one user account
-- [ ] the Plugins step lists the payload's 13 plugins, nothing pre-checked;
+- [ ] the Plugins step lists the payload's 16 plugins, nothing pre-checked;
       pick 2–3 (say the dock, clipboard, music); the Summary names them
 - [ ] installer completes; target has `[ewe]` in pacman.conf, greetd enabled,
       wayland session entry, user's home deployed (`~/.local/share/ewe`)
 - [ ] on the installed disk: `ewe-plugin list` shows exactly the picked
       plugins (installed, enabled, source bundled), nothing else;
-      `~/.local/state/ewe/addons-migrated` names all 13 as considered
+      `~/.local/state/ewe/addons-migrated` names all 16 as considered
       (nothing migrated); the dock is there only if it was picked
 - [ ] `ewe-install --help` prints the plugin options; `ewe-install --addons
       ewe.dock` from tty3 works the same way (rescue path)

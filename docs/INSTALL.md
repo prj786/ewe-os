@@ -59,8 +59,9 @@ button on the Summary screen.
    red here and again on the Summary.
 5. **Your account** — name, username, password, computer name.
 6. **Plugins** — the extras that ship with ewe but are not installed
-   until you ask: the dock, clipboard history, screenshots, passwords,
-   music, Places, your phone, mail, Cast to TV, Insomnia, system monitor,
+   until you ask: the dock, Safe (ewe's password manager), Shaun (the
+   desktop companion), clipboard history, screenshots, passwords, music,
+   Places, your phone, mail, Slack, Cast to TV, Insomnia, system monitor,
    SSH, VPN. Nothing is pre-checked; tick what you want (the Dock row says
    *Recommended if you like a dock*). You can add or remove these any time
    in **Komble → Plugins**, so an empty pick is a fine answer.

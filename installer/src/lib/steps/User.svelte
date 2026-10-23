@@ -1,12 +1,16 @@
 <script>
   import { choices } from "../state.js";
-  // username auto-derives from the name (REPLACING the field) only while the
-  // user has not typed in it; clearing the field hands it back to derivation
+  // username auto-derives from the name (REPLACING the field) only until the
+  // user types in it. Once typed in it is THEIRS: clearing it used to hand it
+  // back to derivation, so the suggestion refilled on every deletion and a
+  // "gscubba" could never become "scubbarm" (2026-09-11). Emptying the name
+  // field again is the way to get the suggestion back.
   let touched = false;
   const derive = (n) => n.toLowerCase().replace(/[^a-z0-9]+/g, "").slice(0, 16);
   $: if (!touched) $choices.username = $choices.realName ? derive($choices.realName) : "";
+  $: if ($choices.realName === "") touched = false;
   function onUsernameInput() {
-    touched = $choices.username !== "";
+    touched = true;
     $choices.username = derive($choices.username);
   }
 </script>
