@@ -8,6 +8,8 @@
 //! rule as the desktop's dispatcher; never silently trusted, the UI shows
 //! it for confirmation).
 
+mod account;
+
 use std::process::Stdio;
 
 use serde_json::{json, Value};
@@ -456,10 +458,20 @@ async fn run_step(
         "layer",
         "upgrade",
         "addons",
+        "account",
         "reboot",
     ];
     if !allowed.contains(&step.as_str()) {
         return Err(format!("unknown step {step}"));
+    }
+    // the ewe account: the frontend names the user and whether to restore;
+    // the server, the login and the app password come from this process
+    // (account.rs), the passwords travel on the helper's stdin
+    if step == "account" {
+        let (args, stdin) = account::account_args(&app, &args, secret.as_deref()).await?;
+        let mut argv: Vec<&str> = vec!["account"];
+        argv.extend(args.iter().map(String::as_str));
+        return helper(&app, &argv, Some(&stdin)).await;
     }
     let mut argv: Vec<&str> = vec![step.as_str()];
     argv.extend(args.iter().map(String::as_str));
@@ -469,6 +481,7 @@ async fn run_step(
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .manage(account::Account::default())
         .invoke_handler(tauri::generate_handler![
             probe,
             timezones,
@@ -479,7 +492,11 @@ pub fn run() {
             net_status,
             wifi_list,
             wifi_connect,
-            run_step
+            run_step,
+            account::cloud_login,
+            account::cloud_cancel,
+            account::cloud_backup,
+            account::cloud_signout
         ])
         .run(tauri::generate_context!())
         .expect("error while running ewe-installer");

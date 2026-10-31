@@ -239,6 +239,74 @@ for raw in sys.stdin:
     say addons "done"
     ;;
 
+# ── account <username> <server> <login> <yes|no> — the ewe account ──────────
+# (2026-10-31) The user signed in to their own Nextcloud in the installer.
+# stdin carries two lines — the new user's password, then the app password
+# the server handed out — so neither is ever on argv. The app password goes
+# into the new user's LOGIN keyring, created now with the user's password
+# (gnome-keyring --unlock): PAM unlocks the same keyring at the first login,
+# so the first boot is already signed in. `default` names `login`, so apps
+# never make a second keyring that prompts at every boot (Safe's keyring
+# repair, 2026-10-18). The non-secret facts go to ~/.config/ewe/cloud.json.
+# With `yes` the account's copy of ewe.conf replaces the fresh one
+# (`ewe-conf pull` + `apply --no-hooks`, as the user, recorded as synced):
+# settings, the folders to sync, the apps Komble offers, the plugin list.
+# Best-effort like the plugins: a failing part is reported and the verb
+# still exits 0 — the desktop can sign in later, the OS install stands.
+account)
+    uname="${1:-}"; server="${2:-}"; login="${3:-}"; restore="${4:-no}"
+    valid_user "$uname" || die "invalid username"
+    [[ "$server" =~ ^https://[A-Za-z0-9.-]+(:[0-9]+)?(/[A-Za-z0-9._~/-]*)?$ ]] || die "the server must be an https:// address"
+    [[ "$login" =~ ^[^[:cntrl:]\ ][^[:cntrl:]]{0,199}$ ]] || die "invalid login name"
+    [ "$restore" = yes ] || [ "$restore" = no ] || die "restore must be yes or no"
+    mountpoint -q "$MNT" || die "target not mounted"
+    IFS= read -r pw || true
+    IFS= read -r tok || true
+    [ -n "$pw" ] && [ -n "$tok" ] || die "the passwords did not arrive on stdin"
+    home="/home/$uname"
+    [ -d "$MNT$home" ] || die "no home folder for $uname"
+    as_user() {   # as the new user, inside the target, no live-session variables
+        arch-chroot "$MNT" runuser -u "$uname" -- env -i HOME="$home" USER="$uname" LOGNAME="$uname" \
+            PATH=/usr/local/bin:/usr/bin LANG=C.UTF-8 "$@"
+    }
+    rt="/tmp/ewe-account.$$"
+    arch-chroot "$MNT" runuser -u "$uname" -- install -d -m700 "$rt" "$home/.local/share/keyrings" "$home/.config/ewe"
+
+    say account "the app password goes into $uname's login keyring"
+    [ -s "$MNT$home/.local/share/keyrings/default" ] || printf 'login' | as_user sh -c 'cat > "$HOME/.local/share/keyrings/default"'
+    if printf '%s\n%s\n' "$pw" "$tok" | as_user XDG_RUNTIME_DIR="$rt" dbus-run-session -- sh -c '
+            IFS= read -r pw; IFS= read -r tok
+            printf %s "$pw" | gnome-keyring-daemon --unlock --components=secrets >/dev/null 2>&1 || exit 3
+            printf %s "$tok" | secret-tool store --label="ewe cloud" service ewe-cloud server "$1" user "$2"
+        ' sh "$server" "$login" >/dev/null 2>&1; then
+        say account "signed in: the keyring holds the app password"
+    else
+        say account "the keyring step failed — sign in from ewe-sync after the first start"
+    fi
+
+    python3 -c 'import json,sys,time; print(json.dumps({"server": sys.argv[1], "user": sys.argv[2], "login_name": sys.argv[2],
+        "logged_in_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}))' "$server" "$login" \
+        | as_user sh -c 'cat > "$HOME/.config/ewe/cloud.json"'
+
+    if [ "$restore" = yes ]; then
+        say account "bringing back your settings, folders and apps from the account"
+        # ewe-cloud's file keyring, for this one run only: no session bus here
+        printf '%s' "$tok" | as_user sh -c 'umask 077; cat > "$1"' sh "$rt/keyring"
+        if as_user EWE_CLOUD_FAKE_KEYRING="$rt/keyring" sh -c '
+                t="$HOME/.local/share/ewe/bin/ewe-conf"; [ -x "$t" ] || t=ewe-conf
+                "$t" pull | grep -q "\"ok\": true" && "$t" apply --no-hooks >/dev/null' 2>&1 | tail -3 \
+            | while IFS= read -r l; do printf '{"phase":"account","log":%s}\n' "$(printf '%s' "$l" | python3 -c 'import json,sys;print(json.dumps(sys.stdin.read()[:160]))')"; done
+        then :; fi
+        if [ -s "$MNT$home/.local/state/ewe/sync.json" ]; then
+            say account "restored: this computer starts with what your account holds"
+        else
+            say account "the restore did not finish — Welcome offers it again at the first start"
+        fi
+    fi
+    rm -rf "${MNT:?}$rt"
+    say account "done"
+    ;;
+
 # ── upgrade — the target is CURRENT at first boot ───────────────────────────
 # pacstrap + layer install whatever the mirrors held at that moment, and the
 # ISO's own package cache may be days old: the first bare-metal install

@@ -10,12 +10,13 @@
   import TimePlace from "./lib/steps/TimePlace.svelte";
   import Disk from "./lib/steps/Disk.svelte";
   import User from "./lib/steps/User.svelte";
+  import Cloud from "./lib/steps/Cloud.svelte";
   import Addons from "./lib/steps/Addons.svelte";
   import Summary from "./lib/steps/Summary.svelte";
   import Install from "./lib/steps/Install.svelte";
 
   const COMPONENTS = { welcome: Welcome, network: Network, timeplace: TimePlace, disk: Disk,
-                       user: User, addons: Addons, summary: Summary, install: Install };
+                       user: User, cloud: Cloud, addons: Addons, summary: Summary, install: Install };
 
   // The first-party plugin catalogue is read once, from the live payload —
   // an older ewe on the ISO has none, and then the Plugins step simply is
@@ -49,6 +50,7 @@
     timeplace: c.timezone !== "" && (c.tzConfident || c.tzConfirmed),
     disk: c.disk !== null,
     user: c.username !== "" && c.password.length >= 4,
+    cloud: !c.signingIn,  // signed in or skipped — both are fine; not while the browser step waits
     addons: true,        // nothing picked is a fine answer
     summary: true,       // Summary's own button advances
     install: false,      // Install is terminal
