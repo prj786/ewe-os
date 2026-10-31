@@ -108,3 +108,25 @@ export const MOCK_ADDONS = [
     "version": "1.0.0"
   }
 ];
+
+// Dev mock of the account step's commands (`?mock&step=cloud`; `&backup=none`
+// for an account without a backup). Signing in "waits for the browser" for
+// a moment, then answers like ewe-cloud does.
+export function mockCloud(cmd, args, params) {
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+  switch (cmd) {
+    case "cloud_login":
+      return wait(params.has("still") ? 0 : 1200).then(() => ({
+        ok: true, server: "https://" + String(args.server || "cloud.example.org").replace(/^https?:\/\//, ""),
+        user: "dolly", login_name: "dolly", display_name: "Dolly Sheep", email: "dolly@example.org"
+      }));
+    case "cloud_backup":
+      return Promise.resolve(params.get("backup") === "none" ? { exists: false } : {
+        exists: true, machine: "emoh", modified: new Date(Date.now() - 5 * 3600e3).toISOString(),
+        apps: 24, folders: ["Documents", "Desktop", "Projects"],
+        plugins: ["ewe.clipboard", "ewe.dock", "ewe.media", "ewe.screenshot"], scheme: "ewe-dark"
+      });
+    default:
+      return Promise.resolve(null);
+  }
+}

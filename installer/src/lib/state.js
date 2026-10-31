@@ -24,6 +24,14 @@ export const choices = writable({
   // bundle.json; installed for the new user after ewe-setup, each one
   // best-effort — a failing plugin never fails the OS install ──
   addons: [],
+  // ── the ewe account (2026-10-31): sign in or skip. null = skipped. Never
+  // the app password — that stays in the backend (account.rs) and reaches
+  // the helper on stdin. { server, login, name, email, backup, restore } —
+  // backup: what the account holds (account.rs summarize), restore: bring
+  // it to this computer (default yes when there is one) ──
+  account: null,
+  signingIn: false,        // a sign-in waits for the browser: no Next
+  fromAccount: [],         // plugin ids pre-picked because the backup had them
 });
 
 export const step = writable(0);
@@ -39,7 +47,8 @@ export const STEPS = [
   { key: "network", label: "Network", icon: 0xE1AE },
   { key: "timeplace", label: "Time & place", icon: 0xE0E8 },
   { key: "disk", label: "Disk", icon: 0xE0ED },
-  { key: "user", label: "Your account", icon: 0xE461 },
+  { key: "user", label: "Your login", icon: 0xE461 },
+  { key: "cloud", label: "Your ewe account", icon: 0xE088 },
   { key: "addons", label: "Plugins", icon: 0xE29C },
   { key: "summary", label: "Summary", icon: 0xE1D0 },
   { key: "install", label: "Install", icon: 0xE0B2 },

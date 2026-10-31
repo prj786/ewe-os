@@ -15,6 +15,16 @@
   <div class="flex justify-between border-b border-zinc-800 pb-2"><span class="text-zinc-500">Disk</span><span class="text-red-400">{c.disk?.path} ({c.disk?.size}) — will be completely erased</span></div>
   <div class="flex justify-between border-b border-zinc-800 pb-2"><span class="text-zinc-500">Time & place</span><span>{c.timezone} · {c.locale}</span></div>
   <div class="flex justify-between border-b border-zinc-800 pb-2"><span class="text-zinc-500">Account</span><span>{c.realName} ({c.username}) on “{c.hostname}”</span></div>
+  <div class="flex justify-between gap-6 border-b border-zinc-800 pb-2">
+    <span class="shrink-0 text-zinc-500">ewe account</span>
+    <span class="text-right">
+      {#if c.account}
+        {c.account.name || c.account.login} on {String(c.account.server).replace(/^https?:\/\//, "")}{c.account.backup?.exists && c.account.restore ? ` — brings back everything from “${c.account.backup.machine || "your other computer"}”` : " — signed in"}
+      {:else}
+        not signed in — sign in from the desktop any time
+      {/if}
+    </span>
+  </div>
   {#if $addonsCatalog !== null && $addonsCatalog.length > 0}
     <div class="flex justify-between gap-6 border-b border-zinc-800 pb-2">
       <span class="shrink-0 text-zinc-500">Plugins</span>

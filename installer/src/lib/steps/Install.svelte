@@ -52,6 +52,11 @@
         // a full -Syu in the target so first boot owes nothing; before
         // bootloader, which reads the final kernel + microcode
         ["upgrade", [], null],
+        // the ewe account: the app password into the new login keyring and,
+        // when the account has a backup and the user kept "bring it back",
+        // the account's ewe.conf in place of the fresh one — before the
+        // plugins, which then record themselves in the restored file
+        ...(c.account ? [["account", [c.username, c.account.backup?.exists && c.account.restore ? "yes" : "no"], c.password]] : []),
         // the picked plugins, for the new account, each one best-effort:
         // the helper logs a failure and goes on — a plugin can never fail
         // the OS install (they are one click away in Komble afterwards)
@@ -80,7 +85,7 @@
   {done ? "Done — reboot into ewe" : failed ? "Install failed" : "Installing…"}
 </h1>
 <p class="mb-4 max-w-2xl text-sm {failed ? 'text-red-400' : 'text-zinc-400'}">
-  {failed || (done ? "Remove the USB stick and restart. The greeter will be waiting." : `current step: ${phase === "addons" ? "plugins" : phase}`)}
+  {failed || (done ? ($choices.account ? "Remove the USB stick and restart. Log in and your account is already there; your folders come down by themselves." : "Remove the USB stick and restart. The greeter will be waiting.") : `current step: ${phase === "addons" ? "plugins" : phase === "account" ? "your ewe account" : phase}`)}
 </p>
 {#if done && addonsFailed.length}
   <p class="mb-4 max-w-2xl text-sm text-amber-400">

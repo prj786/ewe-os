@@ -20,12 +20,16 @@ session and installed systems roll forward with plain `pacman -Syu`.
   0.25 a fresh account has no dock; `ewe-live-deploy`). A root rescue
   console lives on tty3 (Ctrl+Alt+F3); tty1 belongs to the greeter.
 - **`ewe-installer`** — the graphical installer (Tauri; RFC-003 in
-  `docs/`): keyboard, network, time & place, disk, account, **plugins**,
-  summary, install. The Plugins step lists every first-party plugin the
+  `docs/`): keyboard, network, time & place, disk, your login, **your ewe
+  account**, **plugins**, summary, install. *Your ewe account* is sign in or
+  skip: signed in to your Nextcloud, the new computer starts signed in (the
+  app password goes into the new login keyring) and, when the account holds
+  a backup, with everything from it — settings, the folders to sync, the
+  apps for Komble. The Plugins step lists every first-party plugin the
   payload carries (dock, Safe, Shaun, clipboard, screenshots, music,
-  Places, phone, mail, Slack, Cast to TV, …) with nothing pre-checked — they are opt-in — and
-  the picked ones are installed for the new account at the end of the run,
-  each one best-effort.
+  Places, phone, mail, Slack, Cast to TV, …): the ones your backup had are
+  pre-checked, otherwise none — they are opt-in — and the picked ones are
+  installed for the new account at the end of the run, each one best-effort.
 - **`ewe-install`** — the same install from a terminal (rescue/headless):
   archinstall handles disks, locale, users and bootloader; the wrapper then
   layers the `[ewe]` repo, the `ewe` package, the greeter stack (greetd →

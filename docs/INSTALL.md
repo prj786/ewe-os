@@ -46,7 +46,7 @@ sit — a fresh install starts without it unless you pick it on the Plugins
 screen. Nothing is written to your disks until you press the red Install
 button on the Summary screen.
 
-## 3 · Install — eight screens
+## 3 · Install — nine screens
 
 1. **Welcome** — keyboard layout, with a field to try it.
 2. **Network** — the install downloads the whole system, so this screen
@@ -57,26 +57,41 @@ button on the Summary screen.
    you always see what was chosen), plus a language/locale picker.
 4. **Disk** — pick the disk. **The whole disk is erased**; the warning is
    red here and again on the Summary.
-5. **Your account** — name, username, password, computer name.
-6. **Plugins** — the extras that ship with ewe but are not installed
+5. **Your login** — name, username, password, computer name.
+6. **Your ewe account** — sign in to your own Nextcloud, or press Next to
+   skip. Signing in opens your server's own page in the browser (ewe never
+   sees your Nextcloud password). If the account holds a backup from
+   another ewe computer, the screen says what comes back — which computer,
+   when, your folders, how many apps, which plugins — and **Bring all of it
+   to this computer** is ticked. The new computer then starts signed in
+   (the app password goes straight into your login keyring, unlocked by
+   your login password), with your settings and look, your folders coming
+   down by themselves, your browser bringing back bookmarks and tabs, and
+   your apps waiting in Komble.
+7. **Plugins** — the extras that ship with ewe but are not installed
    until you ask: the dock, Safe (ewe's password manager), Shaun (the
    desktop companion), clipboard history, screenshots, passwords, music,
    Places, your phone, mail, Slack, Cast to TV, Insomnia, system monitor,
-   SSH, VPN. Nothing is pre-checked; tick what you want (the Dock row says
-   *Recommended if you like a dock*). You can add or remove these any time
-   in **Komble → Plugins**, so an empty pick is a fine answer.
-7. **Summary** — everything you chose (plugins included), the *Decided by
-   ewe* panel, and the only Install button.
-8. **Install** — a last connectivity check, then streamed progress:
+   SSH, VPN. Signed in with a backup, the plugins that computer had are
+   already ticked (*From your account*); otherwise nothing is pre-checked.
+   Tick or untick anything (the Dock row says *Recommended if you like a
+   dock*). You can add or remove these any time in **Komble → Plugins**, so
+   an empty pick is a fine answer.
+8. **Summary** — everything you chose (your ewe account and plugins
+   included), the *Decided by ewe* panel, and the only Install button.
+9. **Install** — a last connectivity check, then streamed progress:
    the base system, the desktop, then **updating the installed system**
-   so the first boot owes no updates, your plugins, then **Reboot**.
+   so the first boot owes no updates, your ewe account (and the restore),
+   your plugins, then **Reboot**.
    Remove the stick when the screen goes dark. If a step fails, the screen
    says why and offers **Retry** (the disk is partitioned again from
    scratch) or **Back**. A plugin that could not be installed never fails
    the install: the Done screen names it and Komble → Plugins has it later.
 
 The installed machine boots through the ewe splash into the graphical
-greeter. The first login opens the **Welcome** flow: connect to the
+greeter. Signed in at install, the first login is already your desktop
+from your account; Welcome skips what is done. Otherwise the first login
+opens the **Welcome** flow: connect to the
 internet (Wi-Fi is joined from the flow itself), install any updates that
 are waiting, **sign in to your Nextcloud** (the card with the Nextcloud
 logo — any provider, or a server you run; ewe opens your server's own login
@@ -101,9 +116,10 @@ folder, and needs your own OAuth client file (Settings → Account).
 
 - **Updates**: Komble → Updates, or `sudo pacman -Syu`. The top-bar download
   glyph tells you when something is pending.
-- **Your account**: Settings → Account → *Sign in to Nextcloud* if you
-  skipped it in the Welcome flow. Sync of the one file, your calendar and
-  your files (`~/Nextcloud`) come from that account.
+- **Your account**: **ewe-sync** if you skipped it in the installer and
+  the Welcome flow — its Overview shows everything your account keeps
+  (settings & apps, browser, passwords, folders) and *Bring everything
+  back* on a computer that has a backup waiting.
 - **Google (optional)**: Settings → Account → the Google card, only after
   you drop your own OAuth client at `~/.config/ewe/oauth-client.json`; it
   adds Gmail notifications and a Drive folder, nothing else.

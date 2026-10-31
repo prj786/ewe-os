@@ -120,7 +120,7 @@ jobs:
             --metadata="creator:ewe" \
             --metadata="licenseurl:https://www.gnu.org/licenses/old-licenses/gpl-2.0.html" \
             --metadata="subject:linux;arch linux;iso;operating system;hyprland;wayland" \
-            --metadata="description:ewe OS $tag — a complete, Arch-based operating system. x86_64 hybrid ISO with a live session and a six-screen installer. https://prj786.github.io/" \
+            --metadata="description:ewe OS $tag — a complete, Arch-based operating system. x86_64 hybrid ISO with a live session and a nine-screen installer. https://prj786.github.io/" \
             --retries=6
 
           {

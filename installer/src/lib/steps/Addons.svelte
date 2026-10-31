@@ -22,8 +22,13 @@
 
 <h1 class="mb-1 text-2xl font-bold tracking-tight">Plugins</h1>
 <p class="mb-6 max-w-xl text-sm text-zinc-400">
-  A few extras ship with ewe — the dock, music, Places, your phone, mail, Cast to TV and more.
-  None is installed until you pick it. Choose what you want now; the rest is one click away in Komble → Plugins.
+  {#if $choices.fromAccount.length}
+    The plugins you had on “{$choices.account?.backup?.machine || "your other computer"}” are already picked. Turn on any
+    others you want, or turn one off; the rest is one click away in Komble → Plugins.
+  {:else}
+    A few extras ship with ewe — the dock, music, Places, your phone, mail, Cast to TV and more.
+    None is installed until you pick it. Choose what you want now; the rest is one click away in Komble → Plugins.
+  {/if}
 </p>
 
 <div class="max-w-xl">
@@ -37,7 +42,9 @@
         <span class="min-w-0 flex-1">
           <span class="block text-sm font-medium">{a.name || a.id}</span>
           <span class="block truncate text-xs text-zinc-500">{a.description || ""}</span>
-          {#if a.id === DOCK_ID}
+          {#if $choices.fromAccount.includes(a.id)}
+            <span class="block text-xs" style="color: var(--accent)">From your account</span>
+          {:else if a.id === DOCK_ID}
             <span class="block text-xs" style="color: var(--accent)">{DOCK_HINT}</span>
           {/if}
         </span>

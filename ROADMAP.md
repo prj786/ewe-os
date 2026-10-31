@@ -318,6 +318,35 @@ the same rule — nothing pre-checked — and offers them in one place.
 - [ ] QEMU pass of the whole flow with the CI-built ISO (`./run-iso.sh`),
       incl. a pick of 2–3 add-ons and a reboot into the installed disk
 
+## 0.15.0-beta — sign in once, everything follows (2026-10-31)
+
+The ISO for ewe 0.37, ewe-sync 0.15 and ewe browser 0.6 (all through the
+`[ewe]` repo). The installer gets a **Your ewe account** step — sign in or
+skip — so a new computer starts with everything from the account.
+
+- [x] *Your ewe account* (between *Your login* and *Plugins*): your
+      Nextcloud's own sign-in page in the browser (the live system's
+      `ewe-cloud`, run in a private throwaway config with its file keyring —
+      the live user's keyring is never involved); then what the account
+      holds: the computer and date of the backup, folders, apps, plugins;
+      *Bring all of it to this computer* (default on). Skip = today's flow.
+- [x] helper verb `account <user> <server> <login> <yes|no>` — both
+      passwords on stdin: the app password into the new user's **login
+      keyring**, created now with the login password (PAM unlocks it at the
+      first login; `default` = `login`, so no second keyring ever prompts),
+      `~/.config/ewe/cloud.json`, and with *yes* `ewe-conf pull` + `apply
+      --no-hooks` as the user (recorded as synced). Best-effort: a failure
+      is reported, the install stands. Tested as root in an Arch container
+      (keyring made, a later unlock with the login password returns the app
+      password, bad input refused) and the restore line against the mock
+      Nextcloud (folders, look, plugins come over, in step, no conflict)
+- [x] *Plugins*: the backup's first-party plugins are pre-checked and marked
+      *From your account*; any other can be turned on, any turned off
+- [x] the Summary names the account; *Your account* became *Your login*
+- [ ] QEMU pass of the whole flow with the CI-built ISO (`./run-iso.sh`) —
+      not run: no sudo/archiso on the build host this time
+- [ ] the terminal installer (`ewe-install`) has no account step yet
+
 ## 0.14.0-beta — the ISO for ewe 0.35 (2026-10-23)
 
 The first ISO since 0.13.0-beta. Everything below arrived through the

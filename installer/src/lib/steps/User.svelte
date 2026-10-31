@@ -15,8 +15,8 @@
   }
 </script>
 
-<h1 class="mb-1 text-2xl font-bold tracking-tight">Your account</h1>
-<p class="mb-6 text-sm text-zinc-400">The first user is an administrator (sudo via password).</p>
+<h1 class="mb-1 text-2xl font-bold tracking-tight">Your login</h1>
+<p class="mb-6 text-sm text-zinc-400">How you sign in to this computer. The first user is an administrator (sudo via password).</p>
 
 <label class="mb-1 block text-sm text-zinc-300" for="rn">Your name</label>
 <input id="rn" class="input mb-3 w-72"
