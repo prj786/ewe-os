@@ -281,7 +281,7 @@ account)
         ' sh "$server" "$login" >/dev/null 2>&1; then
         say account "signed in: the keyring holds the app password"
     else
-        say account "the keyring step failed — sign in from ewe-sync after the first start"
+        say account "the keyring step failed — sign in from ewe Sync after the first start"
     fi
 
     python3 -c 'import json,sys,time; print(json.dumps({"server": sys.argv[1], "user": sys.argv[2], "login_name": sys.argv[2],
