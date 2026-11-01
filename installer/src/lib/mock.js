@@ -6,7 +6,7 @@ export const MOCK_ADDONS = [
   {
     "id": "ewe.cast",
     "name": "Cast to TV",
-    "description": "Mirror the screen to a Miracast or Chromecast TV from Quick settings, through the ewe-castd engine.",
+    "description": "Mirror the screen to a Miracast or Chromecast TV from Quick settings, through ewe Cast.",
     "icon": "icCast",
     "category": "Connections",
     "version": "1.0.0"

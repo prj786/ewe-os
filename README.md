@@ -26,7 +26,7 @@ session and installed systems roll forward with plain `pacman -Syu`.
   app password goes into the new login keyring) and, when the account holds
   a backup, with everything from it — settings, the folders to sync, the
   apps for Komble. The Plugins step lists every first-party plugin the
-  payload carries (dock, Safe, Shaun, clipboard, screenshots, music,
+  payload carries (dock, ewe Safe, Shaun, clipboard, screenshots, music,
   Places, phone, mail, Slack, Cast to TV, …): the ones your backup had are
   pre-checked, otherwise none — they are opt-in — and the picked ones are
   installed for the new account at the end of the run, each one best-effort.
@@ -55,11 +55,11 @@ uses), and greetd + the live user service are enabled on top.
 |---|---|
 | [ewe](https://github.com/prj786/ewe) | the desktop environment (Hyprland + Quickshell) + `ewe` package |
 | [komble-arch](https://github.com/prj786/komble-arch) | Komble — the software manager |
-| [ewe-settings](https://github.com/prj786/ewe-settings) | the Settings app |
-| [ewe-sync](https://github.com/prj786/ewe-sync) | the account app — your Nextcloud, sync, folders |
-| [ewe-browser](https://github.com/prj786/ewe-browser) | ewe browser — the desktop's browser |
-| [ewe-safe](https://github.com/prj786/ewe-safe) | Safe — ewe's password manager (opt-in, with the Safe plugin) |
+| [ewe-settings](https://github.com/prj786/ewe-settings) | ewe Settings — the settings app |
+| [ewe-sync](https://github.com/prj786/ewe-sync) | ewe Sync — your account: your Nextcloud, sync, folders |
+| [ewe-browser](https://github.com/prj786/ewe-browser) | ewe Browser — the desktop's browser |
+| [ewe-safe](https://github.com/prj786/ewe-safe) | ewe Safe — ewe's password manager (opt-in, with the ewe Safe plugin) |
 | [ewe-companion](https://github.com/prj786/ewe-companion) | Shaun — the desktop companion (opt-in, with the Shaun plugin) |
-| [ewe-cast](https://github.com/prj786/ewe-cast) | casting to a TV (the Cast plugin's engine) |
+| [ewe-cast](https://github.com/prj786/ewe-cast) | ewe Cast — casting to a TV (the Cast to TV plugin's engine) |
 | [ewe-repo](https://github.com/prj786/ewe-repo) | the `[ewe]` pacman repository |
 | ewe-os | this — the ISO |
