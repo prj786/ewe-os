@@ -86,16 +86,57 @@ fn server_ok(s: &str) -> bool {
 /// Login Flow v2 through ewe-cloud. The sign-in page's URL arrives on the
 /// tool's stderr long before the result; it is sent to the window as
 /// `cloud-login-url` (Open / Copy while the browser step is pending).
+///
+/// With `user` and `password` (no Nextcloud page): `ewe-cloud login <server>
+/// --user <name> --password-stdin` — the password goes down stdin, never
+/// argv, and ewe-cloud trades it once for an app password (OCS
+/// core/getapppassword); only that is kept. Two-step verification or single
+/// sign-on answers `browser: true`, and the step offers the browser.
 #[tauri::command]
-pub async fn cloud_login(app: tauri::AppHandle, server: String) -> Result<Value, String> {
+pub async fn cloud_login(
+    app: tauri::AppHandle,
+    server: String,
+    user: Option<String>,
+    password: Option<String>,
+) -> Result<Value, String> {
     if !server_ok(&server) {
         return Err("That doesn’t look like a server address.".into());
     }
+    let login = user.as_deref().unwrap_or("").trim().to_string();
+    let secret = password.unwrap_or_default();
+    let with_password = !secret.is_empty();
+    if with_password
+        && (login.is_empty() || login.chars().count() > 256 || login.chars().any(char::is_control))
+    {
+        return Ok(
+            json!({ "ok": false, "error": "no-user", "message": "Enter your username or email." }),
+        );
+    }
+    if secret.contains('\n') || secret.contains('\r') {
+        return Ok(json!({ "ok": false, "error": "bad-password",
+                          "message": "A password can’t contain a line break." }));
+    }
     let st = app.state::<Account>();
     let dir = private_dir()?;
-    let mut child = tool(&dir, "ewe-cloud", &["login", server.trim()])
-        .spawn()
-        .map_err(|e| format!("ewe-cloud: {e}"))?;
+    let mut args = vec!["login", server.trim()];
+    if with_password {
+        args.extend(["--user", login.as_str(), "--password-stdin"]);
+    }
+    let mut cmd = tool(&dir, "ewe-cloud", &args);
+    if with_password {
+        cmd.stdin(Stdio::piped());
+    }
+    let mut child = cmd.spawn().map_err(|e| format!("ewe-cloud: {e}"))?;
+    if with_password {
+        use tokio::io::AsyncWriteExt;
+        let mut stdin = child.stdin.take().ok_or("no stdin")?;
+        let mut line = secret.into_bytes();
+        line.push(b'\n');
+        let written = stdin.write_all(&line).await;
+        line.fill(0);
+        drop(stdin);
+        written.map_err(|e| format!("ewe-cloud: {e}"))?;
+    }
     *st.login_pid.lock().await = child.id();
     let stderr = child.stderr.take().ok_or("no stderr")?;
     let app2 = app.clone();

@@ -2,7 +2,6 @@ alsa-utils
 amd-ucode
 arch-install-scripts
 archinstall
-b43-fwcutter
 base
 bcachefs-tools
 bind
@@ -12,10 +11,7 @@ brltty
 # remains, and a dkms compile has no place on a live ISO (b43-fwcutter above
 # still covers the b43 class; wl-chip owners install broadcom-wl-dkms later)
 btrfs-progs
-clonezilla
-cloud-init
 cryptsetup
-darkhttpd
 ddrescue
 dhcpcd
 diffutils
@@ -33,17 +29,14 @@ fuse2
 f2fs-tools
 fatresize
 foot-terminfo
-fsarchiver
 ghostty-terminfo
 gpart
-gpm
 gptfdisk
 grml-zsh-config
 grub
 hdparm
 hyperv
 intel-ucode
-irssi
 iw
 iwd
 jfsutils
@@ -51,20 +44,16 @@ kitty-terminfo
 kmscon-terminfo
 ldns
 less
-lftp
 libfido2
 libusb-compat
 linux
-linux-atm
 linux-firmware
 linux-firmware-marvell
 livecd-sounds
 lsscsi
 lvm2
-lynx
 man-db
 man-pages
-mc
 mdadm
 memtest86+
 memtest86+-efi
@@ -76,34 +65,25 @@ modemmanager
 mtools
 nano
 nbd
-ndisc6
 nfs-utils
 nilfs-utils
-nmap
 ntfsprogs
-nvidia-open
 nvme-cli
 open-iscsi
 open-vm-tools
 openconnect
-openpgp-card-tools
 openssh
 openvpn
-partclone
 parted
-partimage
 pcsclite
 ppp
-pptpclient
 pv
 qemu-guest-agent
-refind
 reflector
 rsync
 rxvt-unicode-terminfo
 screen
 sdparm
-sequoia-sq
 sg3_utils
 smartmontools
 sof-firmware
@@ -111,7 +91,6 @@ squashfs-tools
 sudo
 syslinux
 systemd-resolvconf
-tcpdump
 terminus-font
 testdisk
 tmux
@@ -123,11 +102,9 @@ usbmuxd
 usbutils
 vim
 virtualbox-guest-utils-nox
-vpnc
 wireless-regdb
 wireless_tools
 wpa_supplicant
-wvdial
 xdg-utils
 xfsprogs
 xl2tpd
@@ -139,3 +116,8 @@ ewe
 # dependency's 'jack' requirement auto-picks jack2, which then conflicts with
 # the pipewire-jack that ewe's own dependency tree brings in
 pipewire-jack
+# explicit for the same reason: zed wants a `vulkan-driver`, and unclaimed pacman
+# picks nvidia-utils (1 GB, and it blacklists nouveau — the live session then had
+# no GPU driver on NVIDIA, which is why nvidia-open used to ride along). Mesa's
+# CPU Vulkan claims it; nouveau / i915 / xe / amdgpu drive the live desktop.
+vulkan-swrast
