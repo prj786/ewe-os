@@ -116,6 +116,12 @@ export function mockCloud(cmd, args, params) {
   const wait = (ms) => new Promise((r) => setTimeout(r, ms));
   switch (cmd) {
     case "cloud_login":
+      // &login=wrong: the server refuses the password and points at the browser
+      if (params.get("login") === "wrong" && args.password)
+        return wait(params.has("still") ? 0 : 600).then(() => ({
+          ok: false, error: "unauthorized", browser: true,
+          message: "Nextcloud didn't accept that username and password. If your account uses two-step verification or single sign-on, sign in with the browser instead."
+        }));
       return wait(params.has("still") ? 0 : 1200).then(() => ({
         ok: true, server: "https://" + String(args.server || "cloud.example.org").replace(/^https?:\/\//, ""),
         user: "dolly", login_name: "dolly", display_name: "Dolly Sheep", email: "dolly@example.org"

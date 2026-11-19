@@ -1,7 +1,9 @@
 <script>
-  // Your ewe account (2026-10-31) — sign in or skip. Signing in uses your
-  // server's own page in the browser (ewe never sees your Nextcloud
-  // password); the installer then reads what the account holds and, if it
+  // Your ewe account (2026-10-31) — sign in or skip. Signing in takes the
+  // server, a name and the password right here (no Nextcloud page; ewe-cloud
+  // trades the password once for this computer's own app password and keeps
+  // only that), or the server's own page in the browser for two-step
+  // verification and single sign-on; the installer then reads what the account holds and, if it
   // has a backup, this computer starts with all of it: settings and look,
   // the folders that sync, the apps Komble offers, the plugins you had
   // (pre-picked on the next screen; you can still change them). Skipping is
@@ -22,6 +24,10 @@
   }
 
   let server = $choices.account?.server || "";
+  let user = "";
+  let password = "";
+  let viaBrowser = false; // the browser flow is the one running
+  let browserHint = false; // the server wants the browser (2FA, SSO, a redirect)
   let url = "";
   let error = "";
   let reading = false;
@@ -36,14 +42,19 @@
   });
   onDestroy(() => unlisten && unlisten());
 
-  async function signIn() {
+  // browser = false: name + password here; true: the server's own page
+  async function signIn(browser = false) {
     let s = server.trim();
     if (!s) { error = "Enter your server’s address, then sign in."; return; }
-    error = ""; url = "";
+    if (!browser && !user.trim()) { error = "Enter your username or email."; return; }
+    if (!browser && !password) { error = "Enter your password."; return; }
+    error = ""; url = ""; browserHint = false;
+    viaBrowser = browser;
     $choices.signingIn = true;
     try {
-      const r = await call("cloud_login", { server: s });
+      const r = await call("cloud_login", browser ? { server: s } : { server: s, user: user.trim(), password });
       if (r?.ok) {
+        password = "";
         $choices.account = {
           server: r.server, login: r.login_name || r.user, name: r.display_name || r.user,
           email: r.email || "", backup: null, restore: true
@@ -51,11 +62,13 @@
         await readBackup();
       } else if (r && r.error !== "cancelled") {
         error = r.message || r.error || "Couldn’t sign in. Check the address and try again.";
+        browserHint = !browser && !!r.browser;
       }
     } catch (e) {
       error = String(e);
     } finally {
       $choices.signingIn = false;
+      viaBrowser = false;
       url = "";
     }
   }
@@ -106,17 +119,36 @@
 
 {#if !acct}
   <div class="max-w-xl">
-    <label class="mb-1 block text-sm text-zinc-300" for="srv">Your Nextcloud</label>
-    <div class="flex gap-2">
-      <input id="srv" class="input w-80" bind:value={server} placeholder="cloud.example.org"
-             disabled={$choices.signingIn} onkeydown={(e) => e.key === "Enter" && !$choices.signingIn && signIn()} />
-      {#if $choices.signingIn}
-        <button class="btn-ghost" onclick={() => call("cloud_cancel")}>Cancel</button>
-      {:else}
-        <button class="btn-primary px-5" onclick={signIn}>Sign in</button>
-      {/if}
-    </div>
-    {#if $choices.signingIn}
+    <form class="flex flex-col gap-3" onsubmit={(e) => { e.preventDefault(); if (!$choices.signingIn) signIn(false); }}>
+      <label class="block">
+        <span class="mb-1 block text-sm text-zinc-300">Your Nextcloud</span>
+        <input id="srv" class="input w-80" bind:value={server} placeholder="cloud.example.org" autocomplete="url"
+               disabled={$choices.signingIn} />
+      </label>
+      <label class="block">
+        <span class="mb-1 block text-sm text-zinc-300">Username or email</span>
+        <input class="input w-80" bind:value={user} autocomplete="username" autocapitalize="off" spellcheck="false"
+               disabled={$choices.signingIn} />
+      </label>
+      <label class="block">
+        <span class="mb-1 block text-sm text-zinc-300">Password</span>
+        <input class="input w-80" type="password" bind:value={password} autocomplete="current-password"
+               disabled={$choices.signingIn} />
+      </label>
+      <div class="flex flex-wrap items-center gap-4">
+        {#if $choices.signingIn && !viaBrowser}
+          <button class="btn-primary px-5" type="button" disabled>Signing in…</button>
+        {:else if $choices.signingIn}
+          <button class="btn-ghost" type="button" onclick={() => call("cloud_cancel")}>Cancel</button>
+        {:else}
+          <button class="btn-primary px-5" type="submit">Sign in</button>
+          <button class="text-sm underline" type="button" style="color: var(--accent)"
+                  class:font-semibold={browserHint} onclick={() => signIn(true)}
+                  title="For accounts with two-step verification or single sign-on">Sign in with the browser instead</button>
+        {/if}
+      </div>
+    </form>
+    {#if $choices.signingIn && viaBrowser}
       <p class="mt-3 text-sm text-zinc-400">Waiting for the browser… Finish signing in on your server’s page, then come back here.</p>
       {#if url}
         <button class="mt-1 text-sm underline" style="color: var(--accent)" onclick={() => navigator.clipboard.writeText(url)}>Copy the sign-in link</button>
@@ -126,8 +158,8 @@
       <p class="mt-3 text-sm text-red-400">{error}</p>
     {/if}
     <p class="mt-6 text-xs text-zinc-500">
-      Your browser opens your server’s own sign-in page; ewe never sees your Nextcloud password. The server gives this
-      computer its own app password, which you can revoke in Nextcloud → Settings → Security.
+      Your password goes to your server once; the server gives this computer its own app password, which you can
+      revoke in Nextcloud → Settings → Security. The password itself is never kept.
     </p>
   </div>
 {:else}

@@ -365,6 +365,31 @@ plugins with their packages; the Slack plugin.
       the README's repo table names every first-party repo
 - [ ] QEMU pass of the whole flow with the CI-built ISO (`./run-iso.sh`)
 
+## 0.16.0-beta — a lighter image, ewe's own apps (2026-11-19)
+
+The ISO for ewe 0.44 (ewe Files, ewe Player, ewe Viewer; the package diet),
+ewe-sync 0.17 and ewe Browser 0.8.4, all through the `[ewe]` repo.
+
+- [x] *Your ewe account* signs in with your name and password (OCS
+      `getapppassword` through `ewe-cloud login --password-stdin`); *Sign in
+      with the browser instead* stays for 2FA / single sign-on
+- [x] The image stops carrying nvidia-utils (1 GB): zed's `vulkan-driver` is
+      claimed by `vulkan-swrast` (pinned here and in the ewe package), so
+      nouveau drives NVIDIA in the live session again and **nvidia-open**
+      leaves; the installed system still gets NVIDIA's driver in the layer
+      step
+- [x] Out of the image: cloud-init (and its units), clonezilla and its
+      imaging tools (partclone, partimage, fsarchiver), irssi, lynx, mc,
+      nmap, tcpdump, refind, the dial-up / VPN extras (wvdial, pptpclient,
+      vpnc, linux-atm, ndisc6), darkhttpd, lftp, sequoia-sq,
+      openpgp-card-tools, gpm, b43-fwcutter. archinstall (`ewe-install`),
+      brltty / espeakup (the accessibility boot entry), the VM guest tools
+      and the PXE hooks' packages stay
+- [x] Package sum 7.5 → 5.4 GB installed, 2.48 → 1.90 GB compressed
+      (≈ 3.2 GB → ~2.4 GB image; the ewe diet and Reversal's hard links
+      count too)
+- [ ] QEMU pass of the whole flow with the CI-built ISO (`./run-iso.sh`)
+
 ## 1.0.0 — "Dolly" · the release
 
 No suffix, no beta tag — the official ewe OS. Named for the sheep that
