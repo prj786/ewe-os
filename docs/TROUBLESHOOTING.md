@@ -74,12 +74,39 @@ it runs. This one is for the ISO, the installer and the first boots.
   drop-in was carried over, reinstall the DE's `greetd` files
   (`ewe-install --layer-only`).
 - **Greeter shows, login fails** — the password is the one typed in the
-  installer; keyboard layout at the greeter is the one chosen on the
-  Welcome screen. Wrong layout: log in via tty3 and run `localectl
-  set-x11-keymap <layout>`.
+  installer; the login screen starts on the FIRST keyboard of the Keyboard
+  screen (the one the installer itself switched to), and Super+Space
+  switches when there are several. Wrong layout: log in on tty3 and run
+  `sudo localectl set-x11-keymap <layout>[,<second>]` — the login screen
+  reads it at its next start (`sudo systemctl restart greetd`). The console
+  (tty3) uses the first keyboard that types a–z.
 - **Desktop loads but Settings → User says "Not configured"** — the ewe
   package lacks its Google client: `sudo pacman -Syu ewe` (fixed since
   0.9.9-2; CI now asserts the file is in every package).
+
+- **"command not found: sudo"** — systems installed with the graphical
+  installer up to ISO 0.16 have no sudo (base does not include it; the
+  installer only wrote `/etc/sudoers.d/wheel`). `pkexec pacman -S sudo`
+  (your password) adds it; 0.17 installs it with the base system.
+
+## Language, typing and apps
+
+- **Typing in Japanese/Chinese/… does nothing** — Ctrl+Space turns the input
+  method on (the bar's keyboard indicator shows its mark). `ewe-ime status`
+  says whether fcitx5 and the engine are installed (`missing`) and on. If
+  the Done screen said the typing packages could not be installed, ewe
+  Settings → Keyboard and mouse → Typing in other languages installs them.
+- **No spell checking in my language** — Arch has dictionaries for about
+  twenty languages; for the others the Language screen said so and English
+  is checked. ewe Settings → Language → Spell checking adds one (some come
+  from the AUR, through Komble).
+- **The apps marked Komble are not installed** — that is by design: the
+  installer never builds AUR packages. Open Komble → For you → *Apps you
+  picked while installing ewe*. The list lives in
+  `~/.local/state/ewe/install-picks.json`.
+- **Dates still look American** — the formats are the Time & place
+  screen's choice: `localectl` shows `LC_TIME` & co.; ewe Settings → Time
+  and place → Formats changes them (after the next sign-in).
 
 ## Upgrades
 

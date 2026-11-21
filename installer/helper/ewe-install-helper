@@ -19,15 +19,66 @@ MNT=/mnt/ewe-install
 die() { printf '{"error":%s}\n' "$(printf '%s' "$*" | python3 -c 'import json,sys;print(json.dumps(sys.stdin.read()))')" >&2; exit 1; }
 say() { printf '{"phase":"%s","msg":"%s"}\n' "$1" "$2"; }
 
-[ "$(id -u)" -eq 0 ] || die "must run as root"
-[ $# -ge 1 ] || die "no verb"
-verb="$1"; shift
-
 valid_disk() { [[ "$1" =~ ^/dev/(sd[a-z]+|nvme[0-9]+n[0-9]+|vd[a-z]+|mmcblk[0-9]+)$ ]] && [ -b "$1" ]; }
 part_of() {  # disk, index -> partition node (nvme/mmc need the p)
     case "$1" in *[0-9]) echo "$1p$2" ;; *) echo "$1$2" ;; esac
 }
 valid_user() { [[ "$1" =~ ^[a-z_][a-z0-9_-]{0,31}$ ]]; }
+# glibc locale names as SUPPORTED lists them: en_US.UTF-8, sr_RS.UTF-8@latin, aa_ER
+valid_locale() { [[ "$1" =~ ^[A-Za-z0-9_.@-]{2,64}$ ]]; }
+# xkb layout/variant lists, parallel and comma-joined; variants may be empty
+valid_layouts() {
+    [[ "$1" =~ ^[a-z0-9_]{1,32}(,[a-z0-9_]{1,32}){0,3}$ ]] || return 1
+    [ -z "$2" ] && return 0
+    [[ "$2" =~ ^[A-Za-z0-9_-]*(,[A-Za-z0-9_-]*){0,3}$ ]] || return 1
+    local a b
+    a="${1//[^,]/}"; b="${2//[^,]/}"
+    [ "${#a}" = "${#b}" ]
+}
+# package names as Arch allows them
+valid_pkg() { [[ "$1" =~ ^[a-z0-9@_+][a-z0-9@._+-]{0,99}$ ]]; }
+# what the language verb may install: spelling dictionaries and fcitx5 (+ its
+# engines and toolkit glue) — the families ewe Settings installs on demand
+valid_lang_pkg() { [[ "$1" =~ ^(hunspell-[a-z0-9_-]+|fcitx5(-[a-z0-9_-]+)?)$ ]]; }
+
+# xkb layouts whose first level is not Latin (the installer's NON_LATIN list):
+# the console starts with the first layout NOT in here
+NON_LATIN=" ru ua by bg mk rs kz kg mn tj uz ge am gr il ara iq sy ir af pk ma in bd np lk th la kh mm et er bt mv eg "
+
+# console_keymap <layouts> <variants> → a kbd keymap name present on the target
+console_keymap() {
+    local -a ls vs
+    local i l v km map="$MNT/usr/share/systemd/kbd-model-map"
+    IFS=',' read -ra ls <<< "$1"
+    IFS=',' read -ra vs <<< "${2:-}"
+    for i in "${!ls[@]}"; do
+        l="${ls[$i]}"; v="${vs[$i]:-}"
+        case "$NON_LATIN" in *" $l "*) continue ;; esac
+        km=""
+        if [ -r "$map" ]; then
+            # consolelayout xlayout xmodel xvariant …: the row whose first X
+            # layout is ours, with our variant ("-" = none) — the first such row
+            km="$(awk -v l="$l" -v v="${v:--}" '!/^#/ && NF >= 4 {
+                    split($2, xl, ","); split($4, xv, ",")
+                    if (xl[1] == l && (xv[1] == v || (v == "-" && $4 == "-"))) { print $1; exit } }' "$map")"
+        fi
+        [ -n "$km" ] || km="$l"
+        if [ -n "$(find "$MNT/usr/share/kbd/keymaps" -name "$km.map.gz" -print -quit 2>/dev/null)" ]; then
+            printf '%s\n' "$km"; return 0
+        fi
+    done
+    printf 'us\n'
+}
+
+# tests source the functions above (`EWE_HELPER_LIB=1 . ewe-install-helper`,
+# tests/helper-test.sh); pkexec clears the environment, so a real run never
+# takes this branch
+# shellcheck disable=SC2317  # exit for a direct run, return for a source
+if [ "${EWE_HELPER_LIB:-}" = 1 ]; then return 0 2>/dev/null || exit 0; fi
+
+[ "$(id -u)" -eq 0 ] || die "must run as root"
+[ $# -ge 1 ] || die "no verb"
+verb="$1"; shift
 
 case "$verb" in
 
@@ -36,7 +87,7 @@ probe)
     lsblk -J -d -o NAME,PATH,SIZE,MODEL,TYPE,RM,TRAN | python3 -c '
 import json,sys
 d=json.load(sys.stdin)
-disks=[b for b in d["blockdevices"] if b["type"]=="disk" and not b["rm"]]
+disks=[b for b in d["blockdevices"] if b["type"]=="disk" and not b["rm"] and not b["name"].startswith("zram")]
 print(json.dumps({"disks":disks,
                   "battery": __import__("glob").glob("/sys/class/power_supply/BAT*") != [],
                   "ram_gb": round(__import__("os").sysconf("SC_PAGE_SIZE")*__import__("os").sysconf("SC_PHYS_PAGES")/2**30)}))'
@@ -92,7 +143,10 @@ pacstrap)
     # `if !` keeps errexit from killing us silently: the error line below is
     # what the installer shows (stdout is the progress stream; stderr is
     # read too, but this one must reach the log).
-    if ! pacstrap "$MNT" base linux linux-firmware 2>&1 | while IFS= read -r l; do
+    # sudo: the `user` verb makes the first account an administrator through
+    # /etc/sudoers.d/wheel, and base has no sudo — GUI installs shipped
+    # without it until the 0.17 QEMU pass found "command not found: sudo"
+    if ! pacstrap "$MNT" base linux linux-firmware sudo 2>&1 | while IFS= read -r l; do
         printf '{"phase":"pacstrap","log":%s}\n' "$(printf '%s' "$l" | python3 -c 'import json,sys;print(json.dumps(sys.stdin.read()[:160]))')"
     done; then
         printf '{"phase":"pacstrap","msg":"pacstrap failed — the base system could not be downloaded; check the connection and retry"}\n'
@@ -181,11 +235,47 @@ settz)
     mkdir -p "$MNT/etc/ewe"; : > "$MNT/etc/ewe/manual-timezone"
     say settz "$1" ;;
 setlocale)
-    grep -q "^#\?$1 " "$MNT/etc/locale.gen" || die "unknown locale"
-    sed -i "s|^#$1 |$1 |" "$MNT/etc/locale.gen"
+    # setlocale <locale> [formats] (0.17): the language's locale, en_US.UTF-8
+    # always next to it (the fallback every tool and log reads), and the
+    # formats' locale; /etc/locale.conf carries LANG and the five regional
+    # formats (LC_TIME, LC_NUMERIC, LC_MONETARY, LC_MEASUREMENT, LC_PAPER —
+    # the set ewe Settings → Time and place → Formats writes).
+    loc="$1"; fmt="${2:-$1}"
+    for l in "$loc" "$fmt"; do
+        valid_locale "$l" || die "unknown locale: $l"
+        grep -q "^#\?$l " "$MNT/etc/locale.gen" || die "unknown locale: $l"
+    done
+    for l in "$loc" en_US.UTF-8 "$fmt"; do
+        sed -i "s|^#$l |$l |" "$MNT/etc/locale.gen"
+    done
     arch-chroot "$MNT" locale-gen >/dev/null
-    printf 'LANG=%s\n' "$1" > "$MNT/etc/locale.conf"
-    say setlocale "$1" ;;
+    {
+        printf 'LANG=%s\n' "$loc"
+        for v in LC_TIME LC_NUMERIC LC_MONETARY LC_MEASUREMENT LC_PAPER; do
+            printf '%s=%s\n' "$v" "$fmt"
+        done
+    } > "$MNT/etc/locale.conf"
+    say setlocale "$loc (formats: $fmt)" ;;
+setkeymap)
+    # setkeymap <layouts> <variants> (0.17) — the keyboards as xkb names them,
+    # in order ("us,ge", ",qwerty"). X11's keymap for localectl and the
+    # greeter (ewe-install's greeter wrapper reads this file), and the
+    # console's: the first layout that types Latin letters, as kbd names it
+    # (systemd's kbd-model-map), US English when there is none.
+    layouts="${1:-us}"; variants="${2:-}"
+    valid_layouts "$layouts" "$variants" || die "not a keyboard layout list: $layouts / $variants"
+    mountpoint -q "$MNT" || die "target not mounted"
+    keymap="$(console_keymap "$layouts" "$variants")"
+    printf 'KEYMAP=%s\n' "$keymap" > "$MNT/etc/vconsole.conf"
+    install -d "$MNT/etc/X11/xorg.conf.d"
+    {
+        printf '# Written by the ewe installer (keyboard screen) — localectl owns it now.\n'
+        printf 'Section "InputClass"\n        Identifier "system-keyboard"\n        MatchIsKeyboard "on"\n'
+        printf '        Option "XkbLayout" "%s"\n' "$layouts"
+        [ -z "$variants" ] || printf '        Option "XkbVariant" "%s"\n' "$variants"
+        printf 'EndSection\n'
+    } > "$MNT/etc/X11/xorg.conf.d/00-keyboard.conf"
+    say setkeymap "$layouts${variants:+ ($variants)} — console: $keymap" ;;
 sethostname)
     [[ "$1" =~ ^[a-z0-9-]{1,63}$ ]] || die "invalid hostname"
     printf '%s\n' "$1" > "$MNT/etc/hostname"
@@ -273,7 +363,10 @@ account)
     arch-chroot "$MNT" runuser -u "$uname" -- install -d -m700 "$rt" "$home/.local/share/keyrings" "$home/.config/ewe"
 
     say account "the app password goes into $uname's login keyring"
+    # (SC2016 here and below: $HOME and $1 expand in the new user's shell, not this one)
+    # shellcheck disable=SC2016
     [ -s "$MNT$home/.local/share/keyrings/default" ] || printf 'login' | as_user sh -c 'cat > "$HOME/.local/share/keyrings/default"'
+    # shellcheck disable=SC2016
     if printf '%s\n%s\n' "$pw" "$tok" | as_user XDG_RUNTIME_DIR="$rt" dbus-run-session -- sh -c '
             IFS= read -r pw; IFS= read -r tok
             printf %s "$pw" | gnome-keyring-daemon --unlock --components=secrets >/dev/null 2>&1 || exit 3
@@ -284,6 +377,7 @@ account)
         say account "the keyring step failed — sign in from ewe Sync after the first start"
     fi
 
+    # shellcheck disable=SC2016
     python3 -c 'import json,sys,time; print(json.dumps({"server": sys.argv[1], "user": sys.argv[2], "login_name": sys.argv[2],
         "logged_in_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}))' "$server" "$login" \
         | as_user sh -c 'cat > "$HOME/.config/ewe/cloud.json"'
@@ -291,7 +385,9 @@ account)
     if [ "$restore" = yes ]; then
         say account "bringing back your settings, folders and apps from the account"
         # ewe-cloud's file keyring, for this one run only: no session bus here
+        # shellcheck disable=SC2016
         printf '%s' "$tok" | as_user sh -c 'umask 077; cat > "$1"' sh "$rt/keyring"
+        # shellcheck disable=SC2016
         if as_user EWE_CLOUD_FAKE_KEYRING="$rt/keyring" sh -c '
                 t="$HOME/.local/share/ewe/bin/ewe-conf"; [ -x "$t" ] || t=ewe-conf
                 "$t" pull | grep -q "\"ok\": true" && "$t" apply --no-hooks >/dev/null' 2>&1 | tail -3 \
@@ -305,6 +401,181 @@ account)
     fi
     rm -rf "${MNT:?}$rt"
     say account "done"
+    ;;
+
+# ── language <user> <layouts> <variants> <ime,ids> <dict> <pkg,pkgs> ─────────
+# (0.17) What the Language screen picked, on the new system: ONE pacman run
+# for the input method (fcitx5 + its engine — the frontend's list from
+# ewe-ime's catalogue, plus whatever `ewe-ime status` in the target still
+# misses) and the spelling dictionary; then the new user's ewe.conf, through
+# ewe-conf (rule 1) as that user: [desktop.input] kb_layout/kb_variant,
+# [desktop.ime] {enabled, engines}, [desktop.language] spellcheck — and
+# `ewe-ime apply`, so fcitx5's profile and the session environment are there
+# at the first sign-in. Best-effort like the plugins: a part that fails is a
+# {"warn":…} line for the Done screen and the verb still exits 0 (the desktop
+# offers all of it in ewe Settings). Runs before `account`: a restore brings
+# that computer's settings over these.
+language)
+    uname="${1:-}"; layouts="${2:-us}"; variants="${3:-}"; ime="${4:-}"; dict="${5:-}"; pkgs="${6:-}"
+    valid_user "$uname" || die "invalid username"
+    valid_layouts "$layouts" "$variants" || die "not a keyboard layout list: $layouts / $variants"
+    [ -z "$ime" ] || [[ "$ime" =~ ^[A-Za-z0-9_.-]{1,64}(,[A-Za-z0-9_.-]{1,64}){0,7}$ ]] || die "input method ids look like mozc,pinyin"
+    [ -z "$dict" ] || [[ "$dict" =~ ^[a-z]{2,3}(_[A-Z]{2})?(-[A-Za-z0-9]{2,12})?$ ]] || die "not a dictionary name: $dict"
+    want=()
+    if [ -n "$pkgs" ]; then
+        IFS=',' read -ra _p <<< "$pkgs"
+        for p in "${_p[@]}"; do
+            valid_lang_pkg "$p" || die "not a language package: $p"
+            want+=("$p")
+        done
+    fi
+    mountpoint -q "$MNT" || die "target not mounted"
+    home="/home/$uname"
+    [ -d "$MNT$home" ] || die "no home folder for $uname"
+    as_user() {   # as the new user, inside the target, no live-session variables
+        arch-chroot "$MNT" runuser -u "$uname" -- env -i HOME="$home" USER="$uname" LOGNAME="$uname" \
+            PATH=/usr/local/bin:/usr/bin LANG=C.UTF-8 EWE_IME_NO_SESSION=1 EWE_IME_NO_SCOPE=1 "$@"
+    }
+    # the deployed copies match the payload ewe-setup just put in the home
+    # a tiny sh program for the user's shell ($HOME, $t, $@ expand there)
+    # shellcheck disable=SC2016
+    tool() { printf 'for t in "$HOME/.local/share/ewe/bin/%s" /usr/bin/%s; do [ -x "$t" ] && exec "$t" "$@"; done; exit 127' "$1" "$1"; }
+    conf() { as_user sh -c "$(tool ewe-conf)" ewe-conf set --no-hooks "$@" >/dev/null 2>&1; }
+
+    if [ -n "$ime" ]; then
+        engines="$(printf '%s' "$ime" | sed 's/[^,]*/"&"/g; s/,/, /g')"
+        # EWE_IME_SELF: write only — ewe-ime applies once its packages are in
+        if as_user EWE_IME_SELF=1 sh -c "$(tool ewe-conf)" ewe-conf set --no-hooks desktop.ime \
+                "{\"enabled\": true, \"engines\": [$engines]}" >/dev/null 2>&1; then
+            say language "typing in other languages: ${ime//,/, }"
+        else
+            printf '{"phase":"language","warn":"Typing in other languages could not be set up — turn it on in ewe Settings → Keyboard and mouse."}\n'
+        fi
+        # what ewe-ime itself says the engines need on this target
+        while IFS= read -r p; do
+            valid_lang_pkg "$p" || continue
+            case " ${want[*]} " in *" $p "*) ;; *) want+=("$p") ;; esac
+        done < <(as_user sh -c "$(tool ewe-ime)" ewe-ime status 2>/dev/null \
+                 | python3 -c 'import json,sys
+try: print("\n".join(json.load(sys.stdin).get("missing") or []))
+except Exception: pass')
+    fi
+
+    if [ "${#want[@]}" -gt 0 ]; then
+        say language "installing: ${want[*]}"
+        if ! arch-chroot "$MNT" pacman -S --needed --noconfirm "${want[@]}" 2>&1 | while IFS= read -r l; do
+            printf '{"phase":"language","log":%s}\n' "$(printf '%s' "$l" | python3 -c 'import json,sys;print(json.dumps(sys.stdin.read()[:160]))')"
+        done; then
+            printf '{"phase":"language","warn":"The typing and spelling packages (%s) could not be installed — ewe Settings → Language and Keyboard and mouse offer them again."}\n' "${want[*]}"
+        fi
+    fi
+
+    if [ "$layouts" != us ] || [ -n "$variants" ]; then
+        if conf desktop.input.kb_layout "$layouts" && conf desktop.input.kb_variant "$variants"; then
+            say language "keyboard: $layouts${variants:+ ($variants)}"
+        else
+            printf '{"phase":"language","warn":"The keyboard could not be saved for the desktop — pick it again in ewe Settings → Keyboard and mouse."}\n'
+        fi
+    fi
+    if [ -n "$dict" ]; then
+        if conf desktop.language.spellcheck "[\"$dict\", \"en_US\"]"; then
+            say language "spell checking: $dict + en_US"
+        else
+            printf '{"phase":"language","warn":"Spell checking could not be saved — pick the dictionary in ewe Settings → Language."}\n'
+        fi
+    fi
+    if [ -n "$ime" ]; then
+        # fcitx5's profile on the first keyboard, the candidate window's
+        # theme, hypr/generated/ime.env (start-hyprland.sh reads it at the
+        # first sign-in) — no session here, so nothing is started or pushed
+        as_user sh -c "$(tool ewe-ime)" ewe-ime apply >/dev/null 2>&1 || true
+        if [ -s "$MNT$home/.config/fcitx5/profile" ]; then
+            say language "typing in other languages is on (Ctrl+Space)"
+        else
+            printf '{"phase":"language","warn":"Typing in other languages is saved but not ready — ewe Settings → Keyboard and mouse finishes it."}\n'
+        fi
+    fi
+    say language "done"
+    ;;
+
+# ── apps <user> <repo,pkgs> [aur:pkg|appimage:pkg …] — apps for day one ──────
+# (0.17) Komble's curated apps picked on the Apps screen. Repo apps install
+# now, in one pacman run (one by one if that fails); Steam turns on
+# [multilib] with the 32-bit Vulkan driver for this GPU (pacman would
+# otherwise pick lib32-nvidia-utils on its own). AUR and AppImage picks are
+# NEVER built or fetched here: they — and any repo app that did not install —
+# go to the new user's ~/.local/state/ewe/install-picks.json, which Komble
+# shows as "Apps you picked while installing ewe" (komble-arch README,
+# "Install picks"). Best-effort: exits 0 unless the arguments are wrong.
+apps)
+    uname="${1:-}"; repo="${2:-}"; shift 2 || true
+    valid_user "$uname" || die "invalid username"
+    mountpoint -q "$MNT" || die "target not mounted"
+    home="/home/$uname"
+    [ -d "$MNT$home" ] || die "no home folder for $uname"
+    rp=()
+    if [ -n "$repo" ]; then
+        IFS=',' read -ra _r <<< "$repo"
+        for p in "${_r[@]}"; do valid_pkg "$p" || die "not a package name: $p"; rp+=("$p"); done
+    fi
+    picks=()   # "source:pkg"
+    for a in "$@"; do
+        [[ "$a" =~ ^(aur|appimage):[a-z0-9@_+][a-z0-9@._+-]{0,99}$ ]] || die "picks look like aur:spotify"
+        picks+=("$a")
+    done
+    [ "${#picks[@]}" -le 64 ] && [ "${#rp[@]}" -le 64 ] || die "too many apps"
+
+    applog() { while IFS= read -r l; do
+        printf '{"phase":"apps","log":%s}\n' "$(printf '%s' "$l" | python3 -c 'import json,sys;print(json.dumps(sys.stdin.read()[:160]))')"
+    done; }
+    if [ "${#rp[@]}" -gt 0 ]; then
+        extra=()
+        case " ${rp[*]} " in *" steam "*)
+            if ! grep -q '^\[multilib\]' "$MNT/etc/pacman.conf"; then
+                sed -i '/^#\[multilib\]/{N;s/^#\[multilib\]\n#Include = \(.*\)/[multilib]\nInclude = \1/}' "$MNT/etc/pacman.conf"
+                say apps "Steam: 32-bit support ([multilib]) turned on"
+                arch-chroot "$MNT" pacman -Sy --noconfirm 2>&1 | applog || true
+            fi
+            gpus="$(lspci -nn 2>/dev/null | grep -Ei 'vga|3d|display' | tr '[:upper:]' '[:lower:]')"
+            case "$gpus" in *intel*) extra+=(lib32-vulkan-intel) ;; esac
+            case "$gpus" in *\ amd*|*radeon*|*advanced\ micro*) extra+=(lib32-vulkan-radeon) ;; esac
+            case "$gpus" in *nvidia*) extra+=(lib32-nvidia-utils) ;; esac
+            [ "${#extra[@]}" -gt 0 ] || extra+=(lib32-vulkan-swrast)
+            extra+=(lib32-mesa)
+            ;;
+        esac
+        say apps "installing: ${rp[*]}"
+        if ! arch-chroot "$MNT" pacman -S --needed --noconfirm "${rp[@]}" "${extra[@]}" 2>&1 | applog; then
+            say apps "one go did not work — one app at a time"
+            for p in "${rp[@]}"; do
+                ex=(); [ "$p" = steam ] && ex=("${extra[@]}")
+                if ! arch-chroot "$MNT" pacman -S --needed --noconfirm "$p" "${ex[@]}" 2>&1 | applog; then
+                    picks+=("repo:$p")
+                fi
+            done
+        fi
+    fi
+    nrepo=0
+    for a in "${picks[@]}"; do case "$a" in repo:*) nrepo=$((nrepo + 1)) ;; esac; done
+    if [ "${#picks[@]}" -gt 0 ]; then
+        # the picks file: tiny on purpose — {"version":1,"picked":[{"pkg","source"}]}
+        install -d -o "$(stat -c %u "$MNT$home")" -g "$(stat -c %g "$MNT$home")" -m 755 \
+            "$MNT$home/.local" "$MNT$home/.local/state" "$MNT$home/.local/state/ewe"
+        python3 -c 'import json,sys,time
+picked = []
+for a in sys.argv[1:]:
+    src, pkg = a.split(":", 1)
+    if not any(p["pkg"] == pkg for p in picked):
+        picked.append({"pkg": pkg, "source": src})
+print(json.dumps({"version": 1, "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), "picked": picked}, indent=1))' \
+            "${picks[@]}" > "$MNT$home/.local/state/ewe/install-picks.json"
+        chown "$(stat -c %u:%g "$MNT$home")" "$MNT$home/.local/state/ewe/install-picks.json"
+        say apps "waiting in Komble after sign-in: $(printf '%s ' "${picks[@]#*:}")"
+    fi
+    if [ "$nrepo" -gt 0 ]; then
+        printf '{"phase":"apps","warn":"%s app(s) could not be installed now — Komble offers them after you sign in."}\n' "$nrepo"
+    fi
+    say apps "done"
     ;;
 
 # ── upgrade — the target is CURRENT at first boot ───────────────────────────

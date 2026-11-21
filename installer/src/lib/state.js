@@ -3,8 +3,22 @@
 import { writable, derived } from "svelte/store";
 
 export const choices = writable({
+  // ── language first (ewe-os 0.17): the Language screen picks a language and
+  // its region; everything below follows from it and stays changeable.
+  // en_US.UTF-8 is always generated next to the chosen locale. ──
   locale: "en_US.UTF-8",
-  keyboard: "us",
+  langCode: "en",          // the picked language ("ka"); its locale row is `locale`
+  formats: "en_US.UTF-8",  // LC_TIME, LC_NUMERIC, LC_MONETARY, LC_MEASUREMENT, LC_PAPER
+  // the keyboards, in order — the first is the one the computer starts with
+  // (greeter, desktop, console); Super+Space switches. {c: layout, v: variant, n: name}
+  layouts: [{ c: "us", v: "", n: "English (US)" }],
+  layoutsTouched: false,   // edited on the Keyboard screen: a new language re-suggests anyway
+  dict: null,              // {name, package}: an official spelling dictionary to install, or null
+  ime: [],                 // ewe-ime engine ids ("mozc"): fcitx5 + these, on at first sign-in
+  // ── apps for day one (Komble's curated list): repo apps install with the
+  // system; AUR and AppImage apps wait in Komble ("Apps you picked while
+  // installing ewe") — nothing is ever built from the AUR in the installer ──
+  apps: [],                // [{pkg, name, source: "repo" | "aur" | "appimage"}]
   online: false,           // Network step: NetworkManager reports full connectivity
   timezone: "",            // filled by the (confirmed) suggestion or the picker
   tzConfident: false,
@@ -36,6 +50,12 @@ export const choices = writable({
 
 export const step = writable(0);
 
+// What the Language and Keyboard screens offer, read once from the live
+// system: locale rows (`languages`), xkb layouts + variants with their
+// languages (`keyboard_db`), ewe-ime's input methods (`ime_catalog`).
+// null = still loading.
+export const langData = writable({ rows: null, kbdb: null, ime: null });
+
 // The first-party plugin catalogue the live system's ewe payload carries:
 // null until the backend answered, [] when the payload has none (an older
 // ewe on the ISO) — then the Plugins step is not shown at all.
@@ -43,13 +63,15 @@ export const addonsCatalog = writable(null);
 
 // icon: Lucide codepoints — the DE's one icon language
 export const STEPS = [
-  { key: "welcome", label: "Welcome", icon: 0xE1D7 },
+  { key: "language", label: "Language", icon: 0xE0FE },
+  { key: "keyboard", label: "Keyboard", icon: 0xE284 },
   { key: "network", label: "Network", icon: 0xE1AE },
-  { key: "timeplace", label: "Time & place", icon: 0xE0E8 },
+  { key: "timeplace", label: "Time & place", icon: 0xE087 },
   { key: "disk", label: "Disk", icon: 0xE0ED },
   { key: "user", label: "Your login", icon: 0xE461 },
   { key: "cloud", label: "Your ewe account", icon: 0xE088 },
   { key: "addons", label: "Plugins", icon: 0xE29C },
+  { key: "apps", label: "Apps", icon: 0xE3E4 },
   { key: "summary", label: "Summary", icon: 0xE1D0 },
   { key: "install", label: "Install", icon: 0xE0B2 },
 ];

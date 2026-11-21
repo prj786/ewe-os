@@ -6,7 +6,7 @@
 #   scripts/vm.sh up [iso]        boot newest testing/*.iso|out/*.iso (UEFI) + blank target disk
 #   scripts/vm.sh up --bios [iso] legacy boot (syslinux path)
 #   scripts/vm.sh up --gui [iso]  same, but with a visible window + sound (human test drive)
-#   scripts/vm.sh shot [name]     QMP screendump → /tmp/ewe-vm/<name>.png
+#   scripts/vm.sh shot [name]     QMP screendump → $EWE_VM_DIR/<name>.png
 #   scripts/vm.sh key <keys…>     QMP send-key (e.g. `key ret`, `key ctrl-alt-f3`)
 #   scripts/vm.sh type <text>     type a string via send-key
 #   scripts/vm.sh ga <cmd…>       run a command in the guest via qemu-guest-agent
@@ -19,11 +19,16 @@
 # Gotchas encoded here (docs/TESTING.md):
 #   * -device virtio-vga, NOT virtio-gpu-pci: gpu-pci's screendump is black.
 #   * qemu-guest-agent is in the live package set; it needs the virtserialport
-#     named org.qemu.guest_agent.0.
+#     named org.qemu.guest_agent.0. The INSTALLED system has none: for the
+#     post-install pass, add it to the target before pressing Reboot
+#     (docs/TESTING.md, "Install path").
+#   * EWE_VM_DIR (default /tmp/ewe-vm) holds the sockets, the screenshots and
+#     the 40G target disk — on a tmpfs /tmp an install fills RAM, so point it
+#     at a real disk. EWE_VM_GA_TIMEOUT (seconds, default 60) for long `ga` runs.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-WORK=/tmp/ewe-vm
+WORK="${EWE_VM_DIR:-/tmp/ewe-vm}"
 QMP="$WORK/qmp.sock"
 GA="$WORK/ga.sock"
 DISK="$WORK/target.qcow2"
@@ -48,9 +53,9 @@ PY
 }
 
 ga_exec() { # run argv in the guest through the guest agent, print stdout
-    python3 - "$GA" "$@" <<'PY'
+    python3 - "$GA" "${EWE_VM_GA_TIMEOUT:-60}" "$@" <<'PY'
 import base64, json, socket, sys, time
-path, argv = sys.argv[1], sys.argv[2:]
+path, limit, argv = sys.argv[1], float(sys.argv[2]), sys.argv[3:]
 s = socket.socket(socket.AF_UNIX); s.settimeout(30); s.connect(path)
 f = s.makefile("rw")
 def call(cmd):
@@ -60,7 +65,7 @@ call({"execute": "guest-sync", "arguments": {"id": 1}})
 r = call({"execute": "guest-exec", "arguments": {
     "path": argv[0], "arg": argv[1:], "capture-output": True}})
 pid = r["return"]["pid"]
-for _ in range(120):
+for _ in range(int(limit * 2)):
     time.sleep(0.5)
     st = call({"execute": "guest-exec-status", "arguments": {"pid": pid}})["return"]
     if st.get("exited"):
@@ -92,6 +97,7 @@ boot() { # boot <cdrom-args...>
     # --gui: a visible window + sound for a human at the keyboard; the QMP/GA
     # sockets stay up either way, so shot/key/ga keep working alongside it
     local display=(-display none)
+    # shellcheck disable=SC2054  # QEMU's own comma-separated option values
     [ "${GUI:-0}" = 1 ] && display=(-display gtk,gl=on
         -audiodev pipewire,id=snd0 -device intel-hda -device hda-output,audiodev=snd0)
     qemu-system-x86_64 \
@@ -115,9 +121,15 @@ up)
     while [ "${1:-}" = "--bios" ] || [ "${1:-}" = "--gui" ]; do
         [ "$1" = "--bios" ] && BIOS=1; [ "$1" = "--gui" ] && GUI=1; shift
     done
+    # shellcheck disable=SC2012  # newest first; ISO names are plain
     iso="${1:-$(ls -t testing/*.iso out/*.iso 2>/dev/null | head -1)}"
     [ -n "$iso" ] && [ -r "$iso" ] || { echo "no ISO found (testing/ or out/)" >&2; exit 1; }
     echo "booting $iso"
+    # fresh UEFI variables for every ISO boot: after an install the saved
+    # BootOrder starts with the installed disk's entry and OVMF never falls
+    # back to the CD (it tries PXE/HTTP instead — found in the 0.17 pass);
+    # the install then records its entry in these new ones for reboot-disk
+    rm -f "$WORK/OVMF_VARS.fd"
     boot -cdrom "$iso" -boot d
     ;;
 reboot-disk)

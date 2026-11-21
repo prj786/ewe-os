@@ -7,7 +7,8 @@
   import { onMount } from "svelte";
   import { invoke } from "@tauri-apps/api/core";
   import { listen } from "@tauri-apps/api/event";
-  import { choices, step, visibleSteps, indexOf } from "../state.js";
+  import { choices, step, visibleSteps, indexOf, langData } from "../state.js";
+  import { layoutStrings, imePackages } from "../lang.js";
 
   let log = [];
   let phase = "starting";
@@ -16,19 +17,22 @@
   let touched = false;    // a verb that writes to the disk has run
   let running = false;
   let addonsFailed = [];  // [{id, why}] — a plugin that did not install (the OS did)
+  let warnings = [];      // a best-effort part (typing, a dictionary, an app) that did not make it
 
   function push(l) { log = [...log.slice(-400), l]; }
 
   async function run() {
     running = true;
     failed = ""; done = false; touched = false; phase = "checking the connection";
-    log = []; addonsFailed = [];
+    log = []; addonsFailed = []; warnings = [];
     const un = await listen("install-progress", (e) => {
       const p = e.payload;
       if (p.phase) phase = p.phase;
       // the addons verb reports each plugin once: {"addon": id, "ok": bool}
       if (p.addon && p.ok === false) addonsFailed = [...addonsFailed, { id: p.addon, why: p.msg || "" }];
-      push(p.msg || p.log || JSON.stringify(p));
+      // {"warn": "…"}: the language/apps verbs' plain-words note for the Done screen
+      if (p.warn) warnings = [...warnings, String(p.warn)];
+      push(p.msg || p.log || (p.warn ? `!! ${p.warn}` : "") || JSON.stringify(p));
     });
     try {
       let net = { connectivity: "unknown" };
@@ -39,19 +43,38 @@
       }
       const c = $choices;
       const erase = `ERASE=${c.disk.path}`;
+      // language first (0.17): the keyboards as Hyprland's parallel lists, the
+      // input method's packages from ewe-ime's catalogue, the dictionary's
+      const [layouts, variants] = layoutStrings(c.layouts);
+      const langPkgs = [...imePackages(c.ime, $langData.ime), ...(c.dict ? [c.dict.package] : [])];
+      // plain English on a US keyboard needs none of it: the verb is skipped
+      const language = c.ime.length || c.dict || layouts !== "us" || variants !== "";
+      const repoApps = c.apps.filter((a) => a.source === "repo").map((a) => a.pkg);
+      const laterApps = c.apps.filter((a) => a.source !== "repo").map((a) => `${a.source}:${a.pkg}`);
       const seq = [
         ["partition", [c.disk.path, c.fs, erase], null],
         ["mkfs", [c.disk.path, c.fs, erase], null],
         ["pacstrap", [], null],
         ...(c.hibernate ? [["hibernate", [c.fs], null]] : []),
         ["settz", [c.timezone], null],
-        ["setlocale", [c.locale], null],
+        // the locale + en_US.UTF-8 + the formats' locale, LANG and LC_* in
+        // /etc/locale.conf; the console and X11 keymap from the keyboards
+        ["setlocale", [c.locale, c.formats || c.locale], null],
+        ["setkeymap", [layouts, variants], null],
         ["sethostname", [c.hostname], null],
         ["user", [c.realName, c.username], c.password],
         ["layer", [], null],
         // a full -Syu in the target so first boot owes nothing; before
         // bootloader, which reads the final kernel + microcode
         ["upgrade", [], null],
+        // the input method + the spelling dictionary (one pacman run), and
+        // [desktop.input] / [desktop.ime] / [desktop.language] through
+        // ewe-conf as the new user — before the account, whose restore (when
+        // asked for) brings that computer's settings over these
+        ...(language ? [["language", [c.username, layouts, variants, c.ime.join(","), c.dict?.name || "", langPkgs.join(",")], null]] : []),
+        // apps for day one: repo apps now; AUR / AppImage picks (and any repo
+        // app that could not be installed) go to Komble's picks file
+        ...(c.apps.length ? [["apps", [c.username, repoApps.join(","), ...laterApps], null]] : []),
         // the ewe account: the app password into the new login keyring and,
         // when the account has a backup and the user kept "bring it back",
         // the account's ewe.conf in place of the fresh one — before the
@@ -85,8 +108,11 @@
   {done ? "Done — reboot into ewe" : failed ? "Install failed" : "Installing…"}
 </h1>
 <p class="mb-4 max-w-2xl text-sm {failed ? 'text-red-400' : 'text-zinc-400'}">
-  {failed || (done ? ($choices.account ? "Remove the USB stick and restart. Log in and your account is already there; your folders come down by themselves." : "Remove the USB stick and restart. The greeter will be waiting.") : `current step: ${phase === "addons" ? "plugins" : phase === "account" ? "your ewe account" : phase}`)}
+  {failed || (done ? ($choices.account ? "Remove the USB stick and restart. Log in and your account is already there; your folders come down by themselves." : "Remove the USB stick and restart. The greeter will be waiting.") : `current step: ${phase === "addons" ? "plugins" : phase === "account" ? "your ewe account" : phase === "language" ? "your language and typing" : phase === "apps" ? "your apps" : phase}`)}
 </p>
+{#if done && warnings.length}
+  {#each warnings as w}<p class="mb-2 max-w-2xl text-sm text-amber-400">{w}</p>{/each}
+{/if}
 {#if done && addonsFailed.length}
   <p class="mb-4 max-w-2xl text-sm text-amber-400">
     {addonsFailed.length === 1 ? "One plugin could not be installed" : `${addonsFailed.length} plugins could not be installed`}

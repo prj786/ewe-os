@@ -15,6 +15,12 @@
 # The split parts still go to the GitHub release as a mirror, so the image is
 # never behind a single host. One SHA256SUMS covers the whole and the parts.
 #
+# TEST BUILDS. `gh workflow run release-iso.yml --ref <branch> -f test=true`
+# builds the same image from that branch and keeps it as a workflow artifact
+# (`gh run download <run> -n ewe-test-iso`, five days) — no Archive upload,
+# no release created or touched. A dispatch WITHOUT test=true attaches to the
+# newest release, exactly as before (re-publishing a release's downloads).
+#
 # SECRETS. IA_ACCESS / IA_SECRET, from https://archive.org/account/s3.php.
 # Without them the Archive step is SKIPPED, not failed: the parts still
 # publish, so a fork can build the ISO without an Archive account.
@@ -24,6 +30,11 @@ on:
   push:
     tags: ["v*"]
   workflow_dispatch:
+    inputs:
+      test:
+        description: "Test build: keep the ISO as a workflow artifact; no Archive upload, no release touched"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -77,11 +88,27 @@ jobs:
           sha256sum "$iso" > SHA256SUMS
           echo "name=$iso" >> "$GITHUB_OUTPUT"
           cat SHA256SUMS
+          echo "ISO size: $(stat -c %s "$iso") bytes ($(du -h "$iso" | cut -f1))" | tee -a "$GITHUB_STEP_SUMMARY"
+
+      # A test build stops here: the image and its checksum as an artifact,
+      # nothing published anywhere.
+      - name: Keep the test ISO as a workflow artifact
+        if: ${{ inputs.test }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ewe-test-iso
+          path: |
+            out/*.iso
+            out/SHA256SUMS
+          retention-days: 5
+          compression-level: 0
+          if-no-files-found: error
 
       # The whole image, one file, one click. Skipped rather than failed when
       # the keys are absent, so the parts below still publish.
       - name: Publish the whole ISO to the Internet Archive
         id: archive
+        if: ${{ !inputs.test }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           IA_ACCESS: ${{ secrets.IA_ACCESS }}
@@ -130,6 +157,7 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Split for the GitHub mirror
+        if: ${{ !inputs.test }}
         run: |
           cd out
           iso="${{ steps.iso.outputs.name }}"
@@ -139,6 +167,7 @@ jobs:
           ls -lh
 
       - name: Attach to the release
+        if: ${{ !inputs.test }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ISO: ${{ steps.iso.outputs.name }}
@@ -179,7 +208,7 @@ jobs:
       # GitHub for it at page load, which would break its "no third-party
       # requests" promise. One line to move; here it is, ready to paste.
       - name: Tell me what to change on the website
-        if: always()
+        if: ${{ always() && !inputs.test }}
         env:
           ISO: ${{ steps.iso.outputs.name }}
         run: |

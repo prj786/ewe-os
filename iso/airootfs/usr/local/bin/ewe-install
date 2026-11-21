@@ -109,6 +109,7 @@ install_addons() {
         # an unknown id — never let a failure here stop the loop. The copy
         # ewe-setup just deployed into the home is the one that matches that
         # payload (the same rule ewe-setup applies); /usr/bin's is the fallback.
+        # shellcheck disable=SC2016  # $HOME and $t expand in the user's shell
         out="$(chroot_user "$u" sh -c 't="$HOME/.local/share/ewe/bin/ewe-plugin"; [ -x "$t" ] || t=ewe-plugin; exec "$t" "$@"' \
                    ewe-plugin install "$id" --no-restart 2>&1)"; rc=$?
         verdict="$(printf '%s\n' "$out" | python3 -c '
@@ -166,6 +167,7 @@ target_users() {
 
 # sourced by tests (`EWE_INSTALL_LIB=1 . ewe-install`): functions only
 if [ "${EWE_INSTALL_LIB:-}" = 1 ]; then
+    # shellcheck disable=SC2317  # the exit is for a direct run, return for a source
     return 0 2>/dev/null || exit 0
 fi
 
@@ -267,6 +269,7 @@ rm -f "$MNT/root/ewe.gpg"
 # (pipewire-jack is named explicitly for the same reason as the ISO's package
 # list: a dependency's 'jack' requirement would otherwise auto-pick jack2 and
 # conflict with the pipewire-jack inside ewe's own tree)
+# shellcheck disable=SC2059  # the stanza's \n escapes ARE the format
 grep -q '^\[ewe\]' "$MNT/etc/pacman.conf" \
     || printf "$REPO_STANZA" >> "$MNT/etc/pacman.conf"
 chroot_root pacman -Sy --noconfirm --needed pipewire-jack fuse2 ewe \
@@ -328,6 +331,31 @@ systemctl enable greetd.service getty@tty3.service NetworkManager.service blueto
     power-profiles-daemon.service systemd-timesyncd.service avahi-daemon.service
 CHROOT
 ok "greeter (greetd → cage → Quickshell greeter) + core services enabled"
+# 2a · the login screen types with the installed keyboards (ewe-os 0.17): the
+# installer's `setkeymap` (or archinstall) wrote localectl's X11 keymap, and
+# cage takes libxkbcommon's XKB_DEFAULT_* — so the password is typed the way
+# the desktop starts, and Super+Space switches when there are several. Read
+# at every greeter start, so `localectl set-x11-keymap` later moves it too.
+greeter_kb="$(cat <<'KB'
+# the keyboards chosen at install (localectl's X11 keymap); Super+Space switches
+_kb=/etc/X11/xorg.conf.d/00-keyboard.conf
+if [ -r "$_kb" ]; then
+    _l=$(sed -n 's/^[[:space:]]*Option[[:space:]]*"XkbLayout"[[:space:]]*"\([^"]*\)".*/\1/p' "$_kb")
+    _v=$(sed -n 's/^[[:space:]]*Option[[:space:]]*"XkbVariant"[[:space:]]*"\([^"]*\)".*/\1/p' "$_kb")
+    [ -n "$_l" ] && export XKB_DEFAULT_LAYOUT="$_l"
+    [ -n "$_v" ] && export XKB_DEFAULT_VARIANT="$_v"
+    case "$_l" in *,*) export XKB_DEFAULT_OPTIONS=grp:win_space_toggle ;; esac
+fi
+KB
+)"
+python3 - "$MNT/usr/local/bin/ewe-greeter" "$greeter_kb" <<'PY' || echo "!! the login screen keeps US English — localectl set-x11-keymap changes it later"
+import sys
+path, snip = sys.argv[1], sys.argv[2]
+s = open(path).read()
+if "XKB_DEFAULT_LAYOUT" not in s:
+    s = s.replace("exec cage", snip + "\nexec cage", 1)
+    open(path, "w").write(s)
+PY
 # The login keyring is CREATED by pam_gnome_keyring at the first login, with
 # the login password — never by a hidden "new keyring" prompt in the session
 # (the 2026-09-02 metal failure). Assert the PAM stack really carries it.

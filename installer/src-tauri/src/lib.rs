@@ -9,6 +9,7 @@
 //! it for confirmation).
 
 mod account;
+mod language;
 
 use std::process::Stdio;
 
@@ -126,7 +127,13 @@ async fn probe(app: tauri::AppHandle) -> Result<Value, String> {
         .cloned()
         .unwrap_or_default()
         .into_iter()
-        .filter(|b| b["type"] == "disk" && b["rm"] != true)
+        // a zram swap device is a "disk" to lsblk (the live ISO has one):
+        // never an install target
+        .filter(|b| {
+            b["type"] == "disk"
+                && b["rm"] != true
+                && !b["name"].as_str().unwrap_or("").starts_with("zram")
+        })
         .collect();
     let battery = std::fs::read_dir("/sys/class/power_supply")
         .map(|d| {
@@ -454,11 +461,14 @@ async fn run_step(
         "user",
         "settz",
         "setlocale",
+        "setkeymap",
         "sethostname",
         "layer",
         "upgrade",
         "addons",
         "account",
+        "language",
+        "apps",
         "reboot",
     ];
     if !allowed.contains(&step.as_str()) {
@@ -489,6 +499,10 @@ pub fn run() {
             locales,
             suggest_timezone,
             addons,
+            language::languages,
+            language::keyboard_db,
+            language::ime_catalog,
+            language::try_layouts,
             net_status,
             wifi_list,
             wifi_connect,

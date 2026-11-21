@@ -20,8 +20,17 @@ session and installed systems roll forward with plain `pacman -Syu`.
   0.25 a fresh account has no dock; `ewe-live-deploy`). A root rescue
   console lives on tty3 (Ctrl+Alt+F3); tty1 belongs to the greeter.
 - **`ewe-installer`** — the graphical installer (Tauri; RFC-003 in
-  `docs/`): keyboard, network, time & place, disk, your login, **your ewe
-  account**, **plugins**, summary, install. *Your ewe account* is sign in or
+  `docs/`): **language** (by its own name; it fills in the rest), keyboard,
+  network, time & place (with the formats), disk, your login, **your ewe
+  account**, **plugins**, **apps**, summary, install. The language brings its
+  region, keyboards (US English first when the language's own cannot type
+  a–z), formats, a spelling dictionary when Arch has one and, for Chinese,
+  Japanese, Korean, Vietnamese and the Indic languages, an input method
+  (fcitx5, Ctrl+Space) — all changeable, all installed in one pacman run
+  and saved through `ewe-conf` as the new user. The Apps screen offers
+  Komble's curated list: repo apps install with the system, AUR and
+  AppImage picks wait in Komble (`~/.local/state/ewe/install-picks.json`,
+  *For you*) — nothing is built from the AUR in the installer. *Your ewe account* is sign in or
   skip: signed in to your Nextcloud, the new computer starts signed in (the
   app password goes into the new login keyring) and, when the account holds
   a backup, with everything from it — settings, the folders to sync, the

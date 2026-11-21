@@ -25,7 +25,10 @@
 /* Tailwind 4 keeps theme tokens in CSS rather than tailwind.config.js. */
 @theme {
   --color-accent: var(--accent);
-  --font-sans: Ubuntu, "Noto Sans Georgian", Cantarell, system-ui, -apple-system, "Segoe UI", sans-serif;
+  /* every script the Language screen names: Georgian, Arabic (joined — FreeMono
+     drew it unjoined in the DE before), Hebrew, Armenian, the rest of Noto;
+     CJK falls through to Source Han Sans by lang=. No system-ui: no family on Arch. */
+  --font-sans: Ubuntu, "Noto Sans Georgian", "Noto Sans Arabic UI", "Noto Sans Hebrew", "Noto Sans Armenian", "Noto Sans", Cantarell, sans-serif;
 }
 
 /* v4 opts into class-based dark mode explicitly. */
@@ -144,6 +147,10 @@ body {
 input,
 textarea {
   user-select: text;
+}
+/* native checkboxes wear the brand colour, like every ewe app */
+input[type="checkbox"] {
+  accent-color: var(--accent);
 }
 
 @utility btn {
