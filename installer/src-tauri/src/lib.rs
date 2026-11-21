@@ -127,7 +127,13 @@ async fn probe(app: tauri::AppHandle) -> Result<Value, String> {
         .cloned()
         .unwrap_or_default()
         .into_iter()
-        .filter(|b| b["type"] == "disk" && b["rm"] != true)
+        // a zram swap device is a "disk" to lsblk (the live ISO has one):
+        // never an install target
+        .filter(|b| {
+            b["type"] == "disk"
+                && b["rm"] != true
+                && !b["name"].as_str().unwrap_or("").starts_with("zram")
+        })
         .collect();
     let battery = std::fs::read_dir("/sys/class/power_supply")
         .map(|d| {

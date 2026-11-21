@@ -73,6 +73,7 @@ console_keymap() {
 # tests source the functions above (`EWE_HELPER_LIB=1 . ewe-install-helper`,
 # tests/helper-test.sh); pkexec clears the environment, so a real run never
 # takes this branch
+# shellcheck disable=SC2317  # exit for a direct run, return for a source
 if [ "${EWE_HELPER_LIB:-}" = 1 ]; then return 0 2>/dev/null || exit 0; fi
 
 [ "$(id -u)" -eq 0 ] || die "must run as root"
@@ -86,7 +87,7 @@ probe)
     lsblk -J -d -o NAME,PATH,SIZE,MODEL,TYPE,RM,TRAN | python3 -c '
 import json,sys
 d=json.load(sys.stdin)
-disks=[b for b in d["blockdevices"] if b["type"]=="disk" and not b["rm"]]
+disks=[b for b in d["blockdevices"] if b["type"]=="disk" and not b["rm"] and not b["name"].startswith("zram")]
 print(json.dumps({"disks":disks,
                   "battery": __import__("glob").glob("/sys/class/power_supply/BAT*") != [],
                   "ram_gb": round(__import__("os").sysconf("SC_PAGE_SIZE")*__import__("os").sysconf("SC_PHYS_PAGES")/2**30)}))'

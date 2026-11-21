@@ -32,7 +32,7 @@
       if (p.addon && p.ok === false) addonsFailed = [...addonsFailed, { id: p.addon, why: p.msg || "" }];
       // {"warn": "…"}: the language/apps verbs' plain-words note for the Done screen
       if (p.warn) warnings = [...warnings, String(p.warn)];
-      push(p.msg || p.log || JSON.stringify(p));
+      push(p.msg || p.log || (p.warn ? `!! ${p.warn}` : "") || JSON.stringify(p));
     });
     try {
       let net = { connectivity: "unknown" };
