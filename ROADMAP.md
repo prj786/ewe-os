@@ -390,6 +390,31 @@ ewe-sync 0.17 and ewe Browser 0.8.4, all through the `[ewe]` repo.
       count too)
 - [ ] QEMU pass of the whole flow with the CI-built ISO (`./run-iso.sh`)
 
+## 0.17.0-beta — your language first, apps for day one (2026-11-21)
+
+The ISO for ewe 0.47 (video, other languages, spell checking, Shaun 0.3) and
+Komble 0.25, all through the `[ewe]` repo.
+
+- [x] **Language** is the first screen: every language the live system
+      knows, in its own words ("ქართული — Georgian"), with search; it fills
+      in the region, the spelling dictionary and, for Chinese, Japanese,
+      Korean, Vietnamese and the Indic languages, typing (fcitx5 + its engine)
+- [x] **Keyboard**: suggested layouts, reorderable, applied to the live
+      session at once, with a try-it field; languages that cannot type a–z
+      start on English (US) so names and passwords type the same everywhere
+- [x] **Formats** on Time & place with a live example; `/etc/locale.conf`
+      carries LANG plus the five regional formats; en_US.UTF-8 is always
+      generated next to the chosen locale
+- [x] The login screen types with the chosen keyboards (it was always US)
+- [x] **Apps** (optional): Komble's curated tiles; repo apps install with the
+      system, AUR and AppImage picks wait in Komble's For you
+      (`~/.local/state/ewe/install-picks.json`); Steam turns on `[multilib]`
+- [x] The new system has `sudo` (GUI installs never had it: base does not
+      carry it); the Disk screen no longer lists the live system's zram swap
+- [x] `release-iso` test builds (`-f test=true`): a workflow artifact, no
+      release touched
+- [ ] QEMU pass of the whole flow with the CI-built ISO (`scripts/vm.sh`)
+
 ## 1.0.0 — "Dolly" · the release
 
 No suffix, no beta tag — the official ewe OS. Named for the sheep that
