@@ -9,6 +9,7 @@
 //! it for confirmation).
 
 mod account;
+mod language;
 
 use std::process::Stdio;
 
@@ -454,11 +455,14 @@ async fn run_step(
         "user",
         "settz",
         "setlocale",
+        "setkeymap",
         "sethostname",
         "layer",
         "upgrade",
         "addons",
         "account",
+        "language",
+        "apps",
         "reboot",
     ];
     if !allowed.contains(&step.as_str()) {
@@ -489,6 +493,10 @@ pub fn run() {
             locales,
             suggest_timezone,
             addons,
+            language::languages,
+            language::keyboard_db,
+            language::ime_catalog,
+            language::try_layouts,
             net_status,
             wifi_list,
             wifi_connect,
