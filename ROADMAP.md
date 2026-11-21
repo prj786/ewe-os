@@ -413,7 +413,11 @@ Komble 0.25, all through the `[ewe]` repo.
       carry it); the Disk screen no longer lists the live system's zram swap
 - [x] `release-iso` test builds (`-f test=true`): a workflow artifact, no
       release touched
-- [ ] QEMU pass of the whole flow with the CI-built ISO (`scripts/vm.sh`)
+- [x] QEMU pass of the whole flow with the CI-built ISO (`scripts/vm.sh`):
+      Georgian and Japanese installs on the branch; the release candidate
+      (test run 44919468357, `2865ccc`) installed Japanese + Mozc + VLC +
+      Spotify-in-Komble as built — disk preselected, `sudo` works, the login
+      screen on `jp`, 日本語 typed, ewe 0.47 + Komble 0.25 from `[ewe]`
 
 ## 1.0.0 — "Dolly" · the release
 
