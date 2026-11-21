@@ -109,6 +109,44 @@ account has no dock, and the live stick pins *Install ewe* in the dock. So
 right after `ewe-setup`; the installer also autostarts and sits first in the
 launcher, as before. What an installed system gets is unchanged.
 
+### Addendum — language first, and apps for day one (ewe-os 0.17.0-beta, 2026-11-21)
+
+The first screen is **Language** (it replaces Welcome). The list is every
+UTF-8 locale glibc supports, grouped by language and named in that language
+and in English — the webview's `Intl.DisplayNames`, glibc's own `lang_name`
+/ `country_name` when WebKit lacks the data (backend `languages`). Picking a
+language is still ONE decision; everything that follows from it is a
+pre-filled suggestion, never a new question:
+
+| follows from the language | how | where it lands |
+|---|---|---|
+| region (`ll_CC.UTF-8`) | `DEFAULT_REGION`, else the country named like the language | `setlocale`: LANG; en_US.UTF-8 always generated next to it |
+| keyboards | xkb evdev.xml `<languageList>` (ISO 639-2/T = glibc `lang_term`), the country's layout first; a non-Latin layout gets `us` FIRST | `setkeymap`: X11 + console keymap; the greeter (cage `XKB_DEFAULT_*`); `[desktop.input]` |
+| formats | the same locale | `setlocale`: LC_TIME/NUMERIC/MONETARY/MEASUREMENT/PAPER |
+| spelling | ewe Settings' official dictionary table; AUR-only → said plainly, not offered | `language`: the hunspell package + `[desktop.language] spellcheck` |
+| input method | ewe-ime's catalogue (`ime_catalog`) | `language`: fcitx5 + engine (one pacman run) + `[desktop.ime]` + `ewe-ime apply` |
+
+The Keyboard screen applies the list to the live session (`try_layouts`,
+`hl.config` through `hyprctl eval`), so the password typed on *Your login*
+is typed the way the new login screen reads it. Plain English on a US
+keyboard skips the `language` verb entirely. ewe.conf is written only
+through `ewe-conf`, as the new user, BEFORE `account` — a restore from the
+account brings that computer's keyboard, typing and spelling over these.
+
+**Apps** (optional, after Plugins): Komble's curated list (a verbatim copy,
+`scripts/sync-curated.sh`). Repo apps install in the target (`apps` verb;
+Steam turns on `[multilib]` with this GPU's lib32 Vulkan driver — pacman
+alone would pick lib32-nvidia-utils). The installer never builds from the
+AUR or fetches an AppImage: those picks, and any repo app that did not
+install, go to the new user's `~/.local/state/ewe/install-picks.json`
+(`{"version":1,"at":…,"picked":[{"pkg","source"}]}`), which Komble shows on
+For you until each is installed or dismissed — AUR ones through its
+PKGBUILD review.
+
+Like the plugins, `language` and `apps` are best-effort: a part that fails is
+a `{"warn": …}` line the Done screen shows with where to get it later; the
+OS install stands.
+
 ## Architecture
 
 - Frontend: Svelte, runs as the live user, one step-component per screen.
