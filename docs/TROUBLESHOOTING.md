@@ -84,6 +84,11 @@ it runs. This one is for the ISO, the installer and the first boots.
   package lacks its Google client: `sudo pacman -Syu ewe` (fixed since
   0.9.9-2; CI now asserts the file is in every package).
 
+- **"command not found: sudo"** — systems installed with the graphical
+  installer up to ISO 0.16 have no sudo (base does not include it; the
+  installer only wrote `/etc/sudoers.d/wheel`). `pkexec pacman -S sudo`
+  (your password) adds it; 0.17 installs it with the base system.
+
 ## Language, typing and apps
 
 - **Typing in Japanese/Chinese/… does nothing** — Ctrl+Space turns the input

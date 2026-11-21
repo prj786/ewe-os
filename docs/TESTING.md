@@ -23,6 +23,24 @@ work folder (sockets, screenshots, the 40G disk) off a tmpfs `/tmp` — an
 install there fills RAM; `EWE_VM_GA_TIMEOUT` lengthens `ga` for slow
 commands (pacman).
 
+`vm.sh up` starts every ISO boot with fresh UEFI variables (after an
+install the old BootOrder sent OVMF to PXE instead of the CD). `click`
+right after typing into a field is sometimes taken as the field's blur:
+take a `shot` and click again when nothing happened.
+
+**On a slow or flaky link** a 2+ GB install can die on a stalled download
+("Operation too slow") and Retry starts from scratch. Serve the packages
+from the host instead: put the `.pkg.tar.zst` files and their `.sig`s in one
+folder, serve it on 127.0.0.1 (the guest reaches it as `10.0.2.2`), and in
+the LIVE system put `CacheServer = http://10.0.2.2:<port>/$repo/os/$arch`
+first in `/etc/pacman.d/mirrorlist` (pacstrap copies it into the target)
+and into `REPO_STANZA` of `/usr/local/bin/ewe-install` for `[ewe]`. pacman
+falls back to the real mirrors for anything the folder lacks. The list of
+files: `pacman -Sp --print-format %l` against an empty root with the
+target's sync databases (`--root /tmp/r --dbpath /tmp/r/db --gpgdir
+/mnt/ewe-install/etc/pacman.d/gnupg`). Test instrumentation only — say so in
+the report.
+
 **A test ISO without a release:** `gh workflow run release-iso.yml --ref
 <branch> -f test=true` builds the image from that branch in CI and keeps it
 as the run's artifact (`gh run download <run> -n ewe-test-iso -D testing/`)
@@ -76,9 +94,12 @@ as the run's artifact (`gh run download <run> -n ewe-test-iso -D testing/`)
       ewe.dock` from tty3 works the same way (rescue path)
 - [ ] for the checks below, give the installed system a guest agent
       BEFORE pressing Reboot (the target is still mounted):
-      `vm.sh ga arch-chroot /mnt/ewe-install pacman -S --noconfirm
-      qemu-guest-agent`, then `vm.sh down && vm.sh reboot-disk`
+      `vm.sh ga sh -c 'arch-chroot /mnt/ewe-install pacman -S --noconfirm
+      qemu-guest-agent && sync && umount -R /mnt/ewe-install'`, then
+      `vm.sh down && vm.sh reboot-disk` (without the sync + umount, `down`
+      may cut the live system off before btrfs commits the package)
 - [ ] reboot from disk: greeter lists "Ewe", login lands in the desktop
+- [ ] `sudo -v` works for the first user (sudo comes with pacstrap since 0.17)
 - [ ] the login screen starts on the first keyboard (the password typed in
       the installer works); with two, Super+Space switches
 - [ ] `localectl`: System Locale LANG + LC_TIME… = the formats; X11 Layout =

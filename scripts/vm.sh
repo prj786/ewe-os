@@ -125,6 +125,11 @@ up)
     iso="${1:-$(ls -t testing/*.iso out/*.iso 2>/dev/null | head -1)}"
     [ -n "$iso" ] && [ -r "$iso" ] || { echo "no ISO found (testing/ or out/)" >&2; exit 1; }
     echo "booting $iso"
+    # fresh UEFI variables for every ISO boot: after an install the saved
+    # BootOrder starts with the installed disk's entry and OVMF never falls
+    # back to the CD (it tries PXE/HTTP instead — found in the 0.17 pass);
+    # the install then records its entry in these new ones for reboot-disk
+    rm -f "$WORK/OVMF_VARS.fd"
     boot -cdrom "$iso" -boot d
     ;;
 reboot-disk)
