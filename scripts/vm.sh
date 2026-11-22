@@ -6,6 +6,8 @@
 #   scripts/vm.sh up [iso]        boot newest testing/*.iso|out/*.iso (UEFI) + blank target disk
 #   scripts/vm.sh up --bios [iso] legacy boot (syslinux path)
 #   scripts/vm.sh up --gui [iso]  same, but with a visible window + sound (human test drive)
+#   scripts/vm.sh up --vnc [iso]  VNC on 127.0.0.1:5900 instead (hosts whose QEMU has no
+#                                 GTK/SDL module: view it with any VNC client or noVNC)
 #   scripts/vm.sh shot [name]     QMP screendump → $EWE_VM_DIR/<name>.png
 #   scripts/vm.sh key <keys…>     QMP send-key (e.g. `key ret`, `key ctrl-alt-f3`)
 #   scripts/vm.sh type <text>     type a string via send-key
@@ -18,6 +20,8 @@
 #
 # Gotchas encoded here (docs/TESTING.md):
 #   * -device virtio-vga, NOT virtio-gpu-pci: gpu-pci's screendump is black.
+#     EWE_VM_VGA=VGA when the host lacks qemu-hw-display-virtio-vga (Arch
+#     ships it apart): the guest renders in software either way (no virgl).
 #   * qemu-guest-agent is in the live package set; it needs the virtserialport
 #     named org.qemu.guest_agent.0. The INSTALLED system has none: for the
 #     post-install pass, add it to the target before pressing Reboot
@@ -97,13 +101,14 @@ boot() { # boot <cdrom-args...>
     # --gui: a visible window + sound for a human at the keyboard; the QMP/GA
     # sockets stay up either way, so shot/key/ga keep working alongside it
     local display=(-display none)
+    [ "${VNC:-0}" = 1 ] && display=(-display none -vnc 127.0.0.1:0)
     # shellcheck disable=SC2054  # QEMU's own comma-separated option values
     [ "${GUI:-0}" = 1 ] && display=(-display gtk,gl=on
         -audiodev pipewire,id=snd0 -device intel-hda -device hda-output,audiodev=snd0)
     qemu-system-x86_64 \
         -enable-kvm -m 6G -smp 4 -cpu host \
         "${firmware[@]}" \
-        -device virtio-vga "${display[@]}" \
+        -device "${EWE_VM_VGA:-virtio-vga}" "${display[@]}" \
         -qmp "unix:$QMP,server=on,wait=off" \
         -chardev "socket,path=$GA,server=on,wait=off,id=qga0" \
         -device virtio-serial -device virtserialport,chardev=qga0,name=org.qemu.guest_agent.0 \
@@ -118,8 +123,8 @@ boot() { # boot <cdrom-args...>
 case "${1:-status}" in
 up)
     shift
-    while [ "${1:-}" = "--bios" ] || [ "${1:-}" = "--gui" ]; do
-        [ "$1" = "--bios" ] && BIOS=1; [ "$1" = "--gui" ] && GUI=1; shift
+    while [ "${1:-}" = "--bios" ] || [ "${1:-}" = "--gui" ] || [ "${1:-}" = "--vnc" ]; do
+        [ "$1" = "--bios" ] && BIOS=1; [ "$1" = "--gui" ] && GUI=1; [ "$1" = "--vnc" ] && VNC=1; shift
     done
     # shellcheck disable=SC2012  # newest first; ISO names are plain
     iso="${1:-$(ls -t testing/*.iso out/*.iso 2>/dev/null | head -1)}"
@@ -134,6 +139,7 @@ up)
     ;;
 reboot-disk)
     [ "${2:-}" = "--gui" ] && GUI=1
+    [ "${2:-}" = "--vnc" ] && VNC=1
     boot -boot c
     ;;
 shot)
@@ -213,7 +219,7 @@ wipe)
     rm -f "$DISK" && echo "target disk wiped"
     ;;
 *)
-    echo "usage: vm.sh up [--bios|--gui] [iso] | reboot-disk [--gui] | shot [name] | key <k…> | type <text> | ga <cmd…> | status | down | wipe" >&2
+    echo "usage: vm.sh up [--bios|--gui|--vnc] [iso] | reboot-disk [--gui|--vnc] | shot [name] | key <k…> | type <text> | ga <cmd…> | status | down | wipe" >&2
     exit 1
     ;;
 esac
