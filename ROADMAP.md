@@ -1,6 +1,6 @@
 # Roadmap — ewe OS
 
-The distro's version line (the DE keeps its own 0.8.x line). Each release has
+The distro's version line (the DE keeps its own). Each release has
 explicit criteria; an ISO ships only after the full checklist in
 [docs/TESTING.md](docs/TESTING.md) passes. Work is tracked as GitHub issues on
 this repo, one milestone per release.
@@ -418,6 +418,47 @@ Komble 0.25, all through the `[ewe]` repo.
       (test run 44919468357, `2865ccc`) installed Japanese + Mozc + VLC +
       Spotify-in-Komble as built — disk preselected, `sudo` works, the login
       screen on `jp`, 日本語 typed, ewe 0.47 + Komble 0.25 from `[ewe]`
+
+## 0.18.0-beta — the ISO for ewe 0.50 (2026-11-27)
+
+The first image built since the desktop depends on eep (apps as cards, from
+the Nix cache) and carries 17 plugins. Everything below was found by reading
+the 0.17 flow against today's packages, before building; the image is not
+tested until the QEMU pass at the end is ticked.
+
+- [x] **The live session cannot run out of space while you install**: eep's
+      package enables a timer that fetches a ~300 MB graphics driver into
+      `/nix` a few minutes after boot, and the live overlay was archiso's
+      256 MB. The timer is masked in the live image only, and every boot
+      entry carries `cow_spacesize=2G`
+- [x] **The installed login screen is ewe's**: Ewe Dark tokens, Geist, and
+      the DE's own wrapper (the VT wipe, the log in a file) instead of one
+      generated here — it had been black and white in a fallback face. The
+      keyboards are the wrapper's own job in an ewe newer than 0.50.1; for
+      0.50.1 they are still spliced in
+- [x] **The Install log follows its last line** (it sat on its first lines)
+- [x] **17 plugins, each with the DE's glyph**: Window switcher had none,
+      Clipboard & emoji still wore the scissors
+- [x] **A download that stalls is waited out**: `--disable-download-timeout`
+      on every pacman run of the install (one stall used to fail the verb, and
+      Retry starts from an empty disk)
+- [x] **`btrfs-progs` and `dosfstools` come with the base system**: without
+      `fsck.btrfs` mkinitcpio ended every build with an error — in the
+      install log and at every kernel update afterwards
+- [x] `scripts/vm.sh`: `--video` (a 1920x1080 window with guest GL,
+      `--software` without), `EWE_VM_MEM` / `SMP` / `DISK_SIZE` / `RES`,
+      `save` / `restore` for retakes, plain words when QEMU's modules are
+      missing; `run-iso.sh` is its front; `docs/RECORDING.md`
+- [x] `installer/tests/`: `greeter-test.sh` (the login screen, in a
+      container, against a real ewe package), `follow-test.mjs`,
+      `glyphs-test.mjs`
+- [ ] QEMU pass of the whole flow with the CI-built ISO (`scripts/vm.sh`,
+      docs/TESTING.md) — including the new live-session and login-screen
+      checks
+- [ ] the capture VM's window path (`--video`), on a machine whose QEMU has
+      its GTK module: it was written on one that has not
+- [ ] the installer still wears the pre-v3 blue accent (`src/main.js`), not
+      the desktop's
 
 ## 1.0.0 — "Dolly" · the release
 

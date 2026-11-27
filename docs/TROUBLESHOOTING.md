@@ -30,9 +30,15 @@ it runs. This one is for the ISO, the installer and the first boots.
   If `ewe-live-user.service` failed, run `/usr/local/bin/ewe-live-deploy`
   by hand as the `ewe` user (`runuser -u ewe -- /usr/local/bin/ewe-live-deploy`)
   and `systemctl restart greetd`.
-- Virtual machines: the desktop needs a GPU with 3D — in QEMU use
-  `virtio-vga`/`virtio-gpu` with `gl=on`; in VirtualBox enable 3D
-  acceleration and give the VM ≥ 64 MB of video memory.
+- Virtual machines: in QEMU the desktop also runs without 3D (the standard
+  VGA or `virtio-vga`, on software rendering — complete, but slow at large
+  sizes); `virtio-vga-gl` with a `gl=on` display gives it guest GL
+  ([RECORDING.md](RECORDING.md)). In VirtualBox enable 3D acceleration and
+  give the VM ≥ 64 MB of video memory.
+- "No space left on device" in the live session: everything written there
+  lives in memory, up to 2 GB since 0.18 (`cow_spacesize` on the boot
+  entry; images up to 0.17 had 256 MB). `df -h /run/archiso/cowspace` shows
+  it.
 
 ## The installer
 
@@ -80,9 +86,24 @@ it runs. This one is for the ISO, the installer and the first boots.
   `sudo localectl set-x11-keymap <layout>[,<second>]` — the login screen
   reads it at its next start (`sudo systemctl restart greetd`). The console
   (tty3) uses the first keyboard that types a–z.
-- **Desktop loads but Settings → User says "Not configured"** — the ewe
-  package lacks its Google client: `sudo pacman -Syu ewe` (fixed since
-  0.9.9-2; CI now asserts the file is in every package).
+- **The login screen is black and white, in a plain font** — systems
+  installed with ISO 0.17 or older: the installer did not lay down the
+  greeter's colours and fonts. `sudo pacman -Syu`: any upgrade of the ewe
+  package builds the colours, and from the release after 0.50.1 it installs
+  the fonts too.
+- **The login screen went back to US English after an update** — ISO 0.17
+  put the keyboards into a login wrapper that the next ewe upgrade replaced.
+  An ewe newer than 0.50.1 carries them in its own wrapper; until then
+  `sudo localectl set-x11-keymap <layout>[,<second>]` has no effect on the
+  login screen and the password is typed in US English.
+- **"error: command failed to execute correctly" at every kernel update**
+  (with "errors were encountered during the build" above it) — systems
+  installed with ISO 0.17 or older on btrfs have no `btrfs-progs`, and
+  mkinitcpio counts the missing `fsck.btrfs` as an error. The image it
+  builds works; `sudo pacman -S btrfs-progs` ends the message.
+- **Settings → Account shows Google as "Not configured"** — expected: ewe
+  ships no Google client. Google is optional and needs your own OAuth client
+  file (docs/INSTALL.md, *After the install*).
 
 - **"command not found: sudo"** — systems installed with the graphical
   installer up to ISO 0.16 have no sudo (base does not include it; the
