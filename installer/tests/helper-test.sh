@@ -75,8 +75,11 @@ expect ge "" us             # nothing Latin at all: US English
 expect fr "" us             # no keymap on this target: US English
 expect ru,de "" de
 
-# the greeter wrapper's reading of localectl's X11 file (ewe-install, 2a)
-snip="$(sed -n "/^greeter_kb=\"\$(cat <<'KB'/,/^KB\$/p" "$here/../iso/airootfs/usr/local/bin/ewe-install" | sed '1d;$d')"
+# the greeter wrapper's reading of localectl's X11 file: the block
+# ewe-install's setup_greeter splices into a wrapper that has none (an ewe
+# payload up to 0.50.1; later ones carry their own, tested in the ewe repo)
+snip="$(sed -n "/^[[:space:]]*greeter_kb=\"\$(cat <<'KB'/,/^KB\$/p" "$here/../iso/airootfs/usr/local/bin/ewe-install" | sed '1d;$d')"
+if [ -n "$snip" ]; then ok "found the keyboard block in ewe-install"; else bad "the keyboard block is not where this test looks for it"; fi
 conf="$MNT/etc/X11/xorg.conf.d/00-keyboard.conf"
 install -d "$(dirname "$conf")"
 printf 'Section "InputClass"\n        Identifier "system-keyboard"\n        Option "XkbLayout" "us,ge"\n        Option "XkbVariant" ",qwerty"\nEndSection\n' > "$conf"
