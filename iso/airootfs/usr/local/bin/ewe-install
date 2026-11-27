@@ -42,6 +42,10 @@ MNT="${EWE_INSTALL_MNT:-/mnt/archinstall}"
 REPO_STANZA='\n[ewe]\nSigLevel = Required DatabaseRequired\nServer = https://github.com/prj786/ewe-repo/releases/download/x86_64\n'
 # the LIVE system's payload — where the plugin catalogue is read from
 LIVE_PLUGINS="${EWE_PAYLOAD_PLUGINS:-/usr/share/ewe/plugins}"
+# every download on the target: pacman's relaxed timeouts, so a transfer that
+# stalls for a while is waited out instead of failing the install (the same
+# flag, for the same reason, as installer/helper/ewe-install-helper)
+NO_STALL=--disable-download-timeout
 
 say() { printf '\033[1;36m::\033[0m %s\n' "$*"; }
 ok()  { printf '\033[1;32mok\033[0m %s\n' "$*"; }
@@ -138,7 +142,7 @@ else:
                     # them today, so this is normally a no-op)
                     say "plugin $id needs: $pkgs"
                     # shellcheck disable=SC2086
-                    chroot_root pacman -S --noconfirm --needed $pkgs \
+                    chroot_root pacman -S --noconfirm --needed "$NO_STALL" $pkgs \
                         || echo "!! packages for plugin $id ($pkgs) could not be installed — the plugin is enabled; install them later with Komble"
                 fi
                 ok "add-on $id installed and enabled for '$u'"
@@ -381,7 +385,7 @@ rm -f "$MNT/root/ewe.gpg"
 # shellcheck disable=SC2059  # the stanza's \n escapes ARE the format
 grep -q '^\[ewe\]' "$MNT/etc/pacman.conf" \
     || printf "$REPO_STANZA" >> "$MNT/etc/pacman.conf"
-chroot_root pacman -Sy --noconfirm --needed pipewire-jack fuse2 ewe \
+chroot_root pacman -Sy --noconfirm --needed "$NO_STALL" pipewire-jack fuse2 ewe \
     || die "installing the ewe package on the target failed."
 ok "[ewe] repo + ewe package on the target"
 
@@ -398,7 +402,7 @@ case "$gpus" in *nvidia*) gpu_pkgs="$gpu_pkgs nvidia-open-dkms nvidia-utils egl-
 if [ -n "$gpu_pkgs" ]; then
     say "GPU driver set for this hardware:$gpu_pkgs"
     # shellcheck disable=SC2086
-    chroot_root pacman -S --noconfirm --needed $gpu_pkgs \
+    chroot_root pacman -S --noconfirm --needed "$NO_STALL" $gpu_pkgs \
         || echo "!! GPU driver install failed — the desktop still runs on mesa; install them later with Komble."
 else
     say "no discrete GPU vendor detected — mesa covers it"
@@ -422,7 +426,7 @@ case "$(grep -m1 vendor_id /proc/cpuinfo 2>/dev/null)" in
     *)              ucode="" ;;
 esac
 if [ -n "$ucode" ]; then
-    chroot_root pacman -S --noconfirm --needed "$ucode" \
+    chroot_root pacman -S --noconfirm --needed "$NO_STALL" "$ucode" \
         && ok "CPU microcode: $ucode" \
         || echo "!! $ucode install failed — boot works without it, install later."
 fi
@@ -432,7 +436,7 @@ fi
 # metal install (2026-09-02) booted into a large pending update. One full
 # upgrade here, before the initramfs rebuild below sees the final kernel.
 say "updating the installed system (kernel, firmware, the desktop)"
-chroot_root pacman -Syu --noconfirm \
+chroot_root pacman -Syu --noconfirm "$NO_STALL" \
     || die "the update after install failed — check the connection and retry."
 ok "installed system is current"
 
