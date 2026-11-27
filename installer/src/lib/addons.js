@@ -12,9 +12,10 @@ const GLYPHS = {
   icApps: 0xe0e9,       // grid-3x3 — the dock
   icCamera: 0xe064,     // camera — screenshot
   icCast: 0xe066,       // cast — cast to TV
-  icClipboard: 0xe14e,  // scissors — clipboard
+  icClipboard: 0xe085,  // clipboard — clipboard history (the DE left the scissors: they read as "cut")
   icCpu: 0xe0a9,        // cpu — system monitor
   icEye: 0xe0ba,        // eye — insomnia
+  icFloating: 0xe426,   // app-window — window switcher
   icFolder: 0xe0d7,     // folder — places
   icLock: 0xe10b,       // lock — passwords, Safe
   icMail: 0xe10f,       // mail

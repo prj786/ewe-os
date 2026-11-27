@@ -6,14 +6,20 @@
   // the first sign-in ("Apps you picked while installing ewe"), and every AUR
   // one still goes through Komble's PKGBUILD review. Apps ewe already ships
   // are left out. Nothing picked is a fine answer.
-  import { choices } from "../state.js";
+  // First on the screen: ewe's own opt-in apps (lib/firstparty.js) — ewe
+  // Mobile, and ewe Safe where the Plugins screen does not already offer it.
+  // Unchecked like everything else; they install from [ewe] with the system.
+  import { choices, addonsCatalog } from "../state.js";
   import { curatedCategories } from "../curated.js";
+  import { firstPartyApps, firstPartyCategory } from "../firstparty.js";
 
   // ewe ships these already (curated marks them "Ships with ewe")
   const shipped = (a) => /ships with ewe/i.test(a.note || "");
-  const cats = curatedCategories
+  const curated = curatedCategories
     .map((c) => ({ ...c, apps: c.apps.filter((a) => !shipped(a)) }))
     .filter((c) => c.apps.length);
+  $: own = firstPartyApps($addonsCatalog);
+  $: cats = own.length ? [{ ...firstPartyCategory, apps: own }, ...curated] : curated;
 
   let filter = "all";
   $: shown = filter === "all" ? cats : cats.filter((c) => c.id === filter);

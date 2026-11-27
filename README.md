@@ -35,8 +35,9 @@ session and installed systems roll forward with plain `pacman -Syu`.
   app password goes into the new login keyring) and, when the account holds
   a backup, with everything from it — settings, the folders to sync, the
   apps for Komble. The Plugins step lists every first-party plugin the
-  payload carries (dock, ewe Safe, Shaun, clipboard, screenshots, music,
-  Places, phone, mail, Slack, Cast to TV, …): the ones your backup had are
+  payload carries (dock, window switcher, ewe Safe, Shaun, clipboard,
+  screenshots, music, Places, phone, mail, Slack, Cast to TV, …): the ones
+  your backup had are
   pre-checked, otherwise none — they are opt-in — and the picked ones are
   installed for the new account at the end of the run, each one best-effort.
 - **`ewe-install`** — the same install from a terminal (rescue/headless):
@@ -51,8 +52,16 @@ session and installed systems roll forward with plain `pacman -Syu`.
 ```sh
 sudo pacman -S archiso
 sudo ./build.sh          # → out/ewe-<VERSION>-x86_64.iso
-./run-iso.sh             # boot it in QEMU/KVM (UEFI)
+./run-iso.sh             # boot it in QEMU/KVM (UEFI), with a disk to install onto
 ```
+
+The released images are built by CI (`.github/workflows/release-iso.yml`),
+which also compiles the graphical installer into the image; `build.sh` does
+not build it. A test image without a release: `gh workflow run
+release-iso.yml --ref <branch> -f test=true` ([docs/TESTING.md](docs/TESTING.md)).
+`run-iso.sh` is a front for `scripts/vm.sh`, the test harness — headless with
+screenshots and a guest agent, or `--video` for the VM an install is recorded
+in ([docs/RECORDING.md](docs/RECORDING.md)).
 
 The profile (`iso/`) derives from archiso's releng v89: its full rescue
 toolbox is kept, networkd/iwd are swapped for NetworkManager (what the DE

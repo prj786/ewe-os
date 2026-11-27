@@ -6,21 +6,19 @@ technical is decided for you (see *Decided by ewe* below).
 
 ## 1 · Get the ISO
 
-Get it in one piece from <https://prj786.github.io/download/>, which links
-the whole image on the Internet Archive. Then check it arrived intact:
-
-```sh
-sha256sum -c SHA256SUMS --ignore-missing
-```
-
-A mirror lives on the [GitHub release](https://github.com/prj786/ewe-os/releases).
-GitHub caps a release file at 2 GiB and the image is larger, so that copy is
-split — download every `.part` into one folder and join them first:
+<https://prj786.github.io/download/> says where the current image is. Today
+that is the [GitHub release](https://github.com/prj786/ewe-os/releases):
+GitHub caps a release file at 2 GiB and the image is larger, so it is split
+— download every `.part` and `SHA256SUMS` into one folder, join the parts and
+check them:
 
 ```sh
 cat ewe-*-x86_64.iso.*.part > ewe-x86_64.iso
 sha256sum -c SHA256SUMS --ignore-missing
 ```
+
+(When the download page offers the image in one piece, there is nothing to
+join: check it with the same `sha256sum` line.)
 
 Write it to a USB stick (any tool works — it is a plain hybrid ISO):
 
@@ -85,8 +83,12 @@ button on the Summary screen.
    red here and again on the Summary.
 6. **Your login** — name, username, password, computer name.
 7. **Your ewe account** — sign in to your own Nextcloud, or press Next to
-   skip. Signing in opens your server's own page in the browser (ewe never
-   sees your Nextcloud password). If the account holds a backup from
+   skip. Type your server's address, your username and your password: the
+   password goes to your server once and is traded for an app password of
+   this computer's own (revoke it any time in Nextcloud → Settings →
+   Security); it is never kept. An account with two-step verification or
+   single sign-on uses *Sign in with the browser instead*, which opens your
+   server's own page. If the account holds a backup from
    another ewe computer, the screen says what comes back — which computer,
    when, your folders, how many apps, which plugins — and **Bring all of it
    to this computer** is ticked. The new computer then starts signed in
@@ -96,15 +98,19 @@ button on the Summary screen.
    your apps waiting in Komble. (Bringing a backup back also brings that
    computer's keyboard, typing and spelling settings, over this screen's.)
 8. **Plugins** — the extras that ship with ewe but are not installed
-   until you ask: the dock, Safe (ewe's password manager), Shaun (the
-   desktop companion), clipboard history, screenshots, passwords, music,
-   Places, your phone, mail, Slack, Cast to TV, Insomnia, system monitor,
-   SSH, VPN. Signed in with a backup, the plugins that computer had are
+   until you ask: the dock, the window switcher (Alt+Tab), Safe (ewe's
+   password manager), Shaun (the desktop companion), clipboard history,
+   screenshots, passwords, music, Places, your phone, mail, Slack, Cast to
+   TV, Insomnia, system monitor, SSH, VPN. Signed in with a backup, the
+   plugins that computer had are
    already ticked (*From your account*); otherwise nothing is pre-checked.
    Tick or untick anything (the Dock row says *Recommended if you like a
    dock*). You can add or remove these any time in **Komble → Plugins**, so
    an empty pick is a fine answer.
-9. **Apps** — optional: Komble's popular apps as tiles (browsers, chat,
+9. **Apps** — optional. First, *From ewe*: ewe's own apps that are not
+   installed unless you ask — **ewe Mobile** (your phone on this computer).
+   ewe Safe is on the Plugins screen, as the plugin that brings it. Then
+   Komble's popular apps as tiles (browsers, chat,
    music, video, office, games …). The ones from Arch's repositories
    install with the system. The ones marked **Komble** come from the AUR or
    as AppImages: the installer never builds those — they wait in Komble
@@ -115,7 +121,8 @@ button on the Summary screen.
 10. **Summary** — everything you chose (language, keyboards, formats,
     spelling, typing, your ewe account, plugins and apps included), the
     *Decided by ewe* panel, and the only Install button.
-11. **Install** — a last connectivity check, then streamed progress:
+11. **Install** — a last connectivity check, then streamed progress (the
+    log follows its last line; scroll up to read, back down to follow again):
     the base system, your language, formats and keyboards, the desktop,
     then **updating the installed system** so the first boot owes no
     updates, your typing and spelling, your apps, your ewe account (and the
@@ -127,7 +134,8 @@ button on the Summary screen.
     names it and says where to get it later (Komble, ewe Settings).
 
 The installed machine boots through the ewe splash into the graphical
-greeter. Signed in at install, the first login is already your desktop
+greeter — ewe's own: Ewe Dark, Geist, your keyboards. Signed in at install,
+the first login is already your desktop
 from your account; Welcome skips what is done. Otherwise the first login
 opens the **Welcome** flow: connect to the
 internet (Wi-Fi is joined from the flow itself), install any updates that
@@ -142,7 +150,7 @@ folder, and needs your own OAuth client file (Settings → Account).
 
 | | |
 |---|---|
-| filesystem | btrfs, `@` / `@home` subvolumes, zstd compression |
+| filesystem | btrfs, `@` / `@home` subvolumes, zstd compression (with `btrfs-progs`, so snapshots and scrub are there) |
 | bootloader | systemd-boot, splash-only boot (no menu unless you hold a key) |
 | hibernation | automatic when a battery is present: swapfile of RAM + 2 GB |
 | kernel | `linux` (stock Arch) + your CPU's microcode |

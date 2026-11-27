@@ -15,6 +15,16 @@ set -euo pipefail
 export PATH=/usr/sbin:/usr/bin:/sbin:/bin
 
 MNT=/mnt/ewe-install
+# Every download runs with pacman's relaxed timeouts. By default libalpm gives
+# up on a transfer that moves less than 1 byte/s for 10 s ("Operation too
+# slow") — one stalled mirror or GitHub asset then fails the verb, and Retry
+# starts the whole install over from an empty disk. A stall that passes costs
+# only its own seconds this way (pacman 7.1, a 40 s stall mid-package: exit 1
+# after 17 s without the flag, installed with it). The price: a connection
+# that has died for good is noticed by TCP's own timeouts, later than 10 s.
+# pacstrap hands everything after the root to pacman, so the flag rides along
+# there too.
+NO_STALL=--disable-download-timeout
 
 die() { printf '{"error":%s}\n' "$(printf '%s' "$*" | python3 -c 'import json,sys;print(json.dumps(sys.stdin.read()))')" >&2; exit 1; }
 say() { printf '{"phase":"%s","msg":"%s"}\n' "$1" "$2"; }
@@ -68,6 +78,25 @@ console_keymap() {
         fi
     done
     printf 'us\n'
+}
+
+# base_packages <root fstype> → what pacstrap installs, one name per line.
+#   sudo         the `user` verb makes the first account an administrator
+#                through /etc/sudoers.d/wheel, and base has no sudo — GUI
+#                installs shipped without it until the 0.17 QEMU pass found
+#                "command not found: sudo"
+#   dosfstools   fsck.vfat for the ESP, which fstab asks systemd to check
+#   btrfs-progs  on btrfs (what the installer makes): the `btrfs` tool itself
+#                — subvolumes, snapshots, scrub — and fsck.btrfs. Without the
+#                latter mkinitcpio's fsck hook counts an error on EVERY
+#                initramfs build ("errors were encountered during the build",
+#                and pacman's "error: command failed to execute correctly"):
+#                in the install log, and at every kernel update afterwards
+#                (0.18; measured on a btrfs root without it — the build
+#                exits 1 without fsck.btrfs, 0 with it)
+base_packages() {
+    printf '%s\n' base linux linux-firmware sudo dosfstools
+    case "${1:-}" in btrfs) printf '%s\n' btrfs-progs ;; esac
 }
 
 # tests source the functions above (`EWE_HELPER_LIB=1 . ewe-install-helper`,
@@ -140,13 +169,17 @@ mkfs)
 pacstrap)
     mountpoint -q "$MNT" || die "target not mounted"
     say pacstrap "installing the base system (this is the long one)"
+    mapfile -t base < <(base_packages "$(findmnt -n -o FSTYPE "$MNT")")
+    # The console keymap file, before the first initramfs is built in there:
+    # without one mkinitcpio's sd-vconsole hook puts a warning in the middle
+    # of the log. `setkeymap` writes the chosen keyboard into the same file
+    # right after; no package owns it.
+    [ -s "$MNT/etc/vconsole.conf" ] \
+        || { install -d "$MNT/etc" && printf 'KEYMAP=us\n' > "$MNT/etc/vconsole.conf"; }
     # `if !` keeps errexit from killing us silently: the error line below is
     # what the installer shows (stdout is the progress stream; stderr is
     # read too, but this one must reach the log).
-    # sudo: the `user` verb makes the first account an administrator through
-    # /etc/sudoers.d/wheel, and base has no sudo — GUI installs shipped
-    # without it until the 0.17 QEMU pass found "command not found: sudo"
-    if ! pacstrap "$MNT" base linux linux-firmware sudo 2>&1 | while IFS= read -r l; do
+    if ! pacstrap "$MNT" "${base[@]}" "$NO_STALL" 2>&1 | while IFS= read -r l; do
         printf '{"phase":"pacstrap","log":%s}\n' "$(printf '%s' "$l" | python3 -c 'import json,sys;print(json.dumps(sys.stdin.read()[:160]))')"
     done; then
         printf '{"phase":"pacstrap","msg":"pacstrap failed — the base system could not be downloaded; check the connection and retry"}\n'
@@ -463,7 +496,7 @@ except Exception: pass')
 
     if [ "${#want[@]}" -gt 0 ]; then
         say language "installing: ${want[*]}"
-        if ! arch-chroot "$MNT" pacman -S --needed --noconfirm "${want[@]}" 2>&1 | while IFS= read -r l; do
+        if ! arch-chroot "$MNT" pacman -S --needed --noconfirm "$NO_STALL" "${want[@]}" 2>&1 | while IFS= read -r l; do
             printf '{"phase":"language","log":%s}\n' "$(printf '%s' "$l" | python3 -c 'import json,sys;print(json.dumps(sys.stdin.read()[:160]))')"
         done; then
             printf '{"phase":"language","warn":"The typing and spelling packages (%s) could not be installed — ewe Settings → Language and Keyboard and mouse offer them again."}\n' "${want[*]}"
@@ -534,7 +567,7 @@ apps)
             if ! grep -q '^\[multilib\]' "$MNT/etc/pacman.conf"; then
                 sed -i '/^#\[multilib\]/{N;s/^#\[multilib\]\n#Include = \(.*\)/[multilib]\nInclude = \1/}' "$MNT/etc/pacman.conf"
                 say apps "Steam: 32-bit support ([multilib]) turned on"
-                arch-chroot "$MNT" pacman -Sy --noconfirm 2>&1 | applog || true
+                arch-chroot "$MNT" pacman -Sy --noconfirm "$NO_STALL" 2>&1 | applog || true
             fi
             gpus="$(lspci -nn 2>/dev/null | grep -Ei 'vga|3d|display' | tr '[:upper:]' '[:lower:]')"
             case "$gpus" in *intel*) extra+=(lib32-vulkan-intel) ;; esac
@@ -545,11 +578,11 @@ apps)
             ;;
         esac
         say apps "installing: ${rp[*]}"
-        if ! arch-chroot "$MNT" pacman -S --needed --noconfirm "${rp[@]}" "${extra[@]}" 2>&1 | applog; then
+        if ! arch-chroot "$MNT" pacman -S --needed --noconfirm "$NO_STALL" "${rp[@]}" "${extra[@]}" 2>&1 | applog; then
             say apps "one go did not work — one app at a time"
             for p in "${rp[@]}"; do
                 ex=(); [ "$p" = steam ] && ex=("${extra[@]}")
-                if ! arch-chroot "$MNT" pacman -S --needed --noconfirm "$p" "${ex[@]}" 2>&1 | applog; then
+                if ! arch-chroot "$MNT" pacman -S --needed --noconfirm "$NO_STALL" "$p" "${ex[@]}" 2>&1 | applog; then
                     picks+=("repo:$p")
                 fi
             done
@@ -587,7 +620,7 @@ print(json.dumps({"version": 1, "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.g
 upgrade)
     mountpoint -q "$MNT" || die "target not mounted"
     say upgrade "updating the installed system (kernel, firmware, the desktop)"
-    if ! arch-chroot "$MNT" pacman -Syu --noconfirm 2>&1 | while IFS= read -r l; do
+    if ! arch-chroot "$MNT" pacman -Syu --noconfirm "$NO_STALL" 2>&1 | while IFS= read -r l; do
         printf '{"phase":"upgrade","log":%s}\n' "$(printf '%s' "$l" | python3 -c 'import json,sys;print(json.dumps(sys.stdin.read()[:160]))')"
     done; then
         printf '{"phase":"upgrade","msg":"the update after install failed — check the connection and retry"}\n'

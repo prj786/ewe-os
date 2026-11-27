@@ -11,6 +11,13 @@ silently reuses a stale work dir).
 | UEFI | `./run-iso.sh` (OVMF) | boot menu → live desktop |
 | BIOS | `./run-iso.sh --bios` | same |
 
+`run-iso.sh` is `scripts/vm.sh up --gui` (a window, sound, a blank target
+disk). A window needs QEMU's GTK module and the display device's, which Arch
+ships apart from `qemu-system-x86`: `vm.sh` names the packages when they are
+missing. Without them `EWE_VM_VGA=VGA scripts/vm.sh up [--vnc]` runs on what
+every QEMU has built in. The VM an install is recorded in (`--video`,
+1920x1080, `save` / `restore` for retakes): [RECORDING.md](RECORDING.md).
+
 Headless (no window, screenshots over QMP): `scripts/vm.sh` — boots the
 newest `testing/*.iso`/`out/*.iso` with a QMP socket, a qemu-guest-agent
 channel (root shell into the live system: `vm.sh ga <cmd…>`), and a
@@ -21,7 +28,35 @@ installed disk for the post-install verification pass. It uses
 reads solid black even while the guest renders. `EWE_VM_DIR` moves its
 work folder (sockets, screenshots, the 40G disk) off a tmpfs `/tmp` — an
 install there fills RAM; `EWE_VM_GA_TIMEOUT` lengthens `ga` for slow
-commands (pacman).
+commands (pacman). `EWE_VM_MEM`, `EWE_VM_SMP`, `EWE_VM_DISK_SIZE` and
+`EWE_VM_RES` (e.g. `1920x1080`) size the machine; `EWE_VM_DRYRUN=1` prints
+the QEMU command and starts nothing.
+
+## Without a VM
+
+What the repository can check by itself — run all of it before a test build:
+
+```sh
+# the helper's pure parts and the base package set
+installer/tests/helper-test.sh
+# the Install log follows its last line
+node installer/tests/follow-test.mjs
+# every plugin of a payload has the DE's glyph
+node installer/tests/glyphs-test.mjs <ewe>/plugins
+# ewe's own opt-in apps: offered once
+node installer/tests/firstparty-test.mjs <ewe>/plugins
+# the login screen ewe-install lays down, per payload
+installer/tests/greeter-test.sh <ewe package or tree> …
+# the installer builds; Komble's curated list is the current one
+( cd installer && npm ci && npm run build \
+    && scripts/sync-curated.sh --check [path/to/komble-arch] )
+( cd installer/src-tauri && cargo test )
+```
+
+`greeter-test.sh` runs `setup_greeter` in an offline Arch container (podman)
+against each payload you give it — the package `[ewe]` serves and the next
+one, since the ISO and an ewe release can land in either order — and then
+runs the installed wrapper with a fake `cage`.
 
 `vm.sh up` starts every ISO boot with fresh UEFI variables (after an
 install the old BootOrder sent OVMF to PXE instead of the CD). `click`
@@ -50,6 +85,12 @@ as the run's artifact (`gh run download <run> -n ewe-test-iso -D testing/`)
 
 - [ ] boot reaches the desktop with no interaction (autologin, first-boot
       deploy runs; a short plymouth-covered pause is OK, black screen is not)
+- [ ] the desktop has ewe's wallpaper, not a flat grey (needs an ewe after
+      0.50.1; the Overview's backdrop shows it too)
+- [ ] the live system has room and keeps it (0.18): `df -h
+      /run/archiso/cowspace` says 2.0G; `systemctl is-enabled
+      eep-driver.timer` says `masked`; 15 minutes after boot `df` still shows
+      it nearly empty and `ls /nix/store | wc -l` has not grown
 - [ ] bar, dock, launcher (Super+D), Quick Settings all open — the dock is
       the `ewe.dock` plugin, installed for the live user by
       `ewe-live-deploy` (a fresh account has none since ewe 0.25); "Install
@@ -82,13 +123,24 @@ as the run's artifact (`gh run download <run> -n ewe-test-iso -D testing/`)
 
 - [ ] QEMU with a blank virtio disk: run "Install ewe" (or `ewe-install`),
       minimal archinstall config, one user account
-- [ ] the Plugins step lists the payload's 16 plugins, nothing pre-checked;
+- [ ] the Plugins step lists the payload's 17 plugins, nothing pre-checked,
+      each with its own glyph (Window switcher: a window, not the puzzle
+      piece; Clipboard & emoji: a clipboard, not scissors);
       pick 2–3 (say the dock, clipboard, music); the Summary names them
+- [ ] Apps opens with *From ewe*: ewe Mobile, unchecked — and no ewe Safe
+      there (the Plugins screen offers it). Picked, the Summary lists ewe
+      Mobile with the apps and `pacman -Q ewe-mobile` answers on the
+      installed disk
+- [ ] the Install screen's log follows its last line; scrolled up, it stays
+      put; scrolled back to the end, it follows again
+- [ ] the install log has no `error:` line and no "errors were encountered
+      during the build" (0.18: `fsck.btrfs` is there for mkinitcpio), and no
+      "vconsole.conf not found" warning
 - [ ] installer completes; target has `[ewe]` in pacman.conf, greetd enabled,
       wayland session entry, user's home deployed (`~/.local/share/ewe`)
 - [ ] on the installed disk: `ewe-plugin list` shows exactly the picked
       plugins (installed, enabled, source bundled), nothing else;
-      `~/.local/state/ewe/addons-migrated` names all 16 as considered
+      `~/.local/state/ewe/addons-migrated` names all 17 as considered
       (nothing migrated); the dock is there only if it was picked
 - [ ] `ewe-install --help` prints the plugin options; `ewe-install --addons
       ewe.dock` from tty3 works the same way (rescue path)
@@ -99,6 +151,17 @@ as the run's artifact (`gh run download <run> -n ewe-test-iso -D testing/`)
       `vm.sh down && vm.sh reboot-disk` (without the sync + umount, `down`
       may cut the live system off before btrfs commits the package)
 - [ ] reboot from disk: greeter lists "Ewe", login lands in the desktop
+- [ ] the login screen is ewe's (0.18): Ewe Dark with the accent, Geist — not
+      black and white in a fallback face — and no text on tty1 before it or
+      between it and the desktop. On disk: `/etc/xdg/quickshell/ewe-greeter/
+      theme-tokens.json`, five files in `/usr/share/fonts/ewe`,
+      `/etc/fonts/conf.d/60-ewe-geist.conf`, and `/usr/local/bin/ewe-greeter`
+      names `XKB_DEFAULT_LAYOUT` and `greeter.log`
+- [ ] `pacman -Q btrfs-progs dosfstools`; `sudo mkinitcpio -P` ends without
+      "errors were encountered"
+- [ ] the first desktop has ewe's wallpaper (an ewe after 0.50.1):
+      `~/.config/hypr/generated/wallpapers.conf` names
+      `/usr/share/ewe/system/branding/wallpapers/ewe-dark.png`
 - [ ] `sudo -v` works for the first user (sudo comes with pacstrap since 0.17)
 - [ ] the login screen starts on the first keyboard (the password typed in
       the installer works); with two, Super+Space switches

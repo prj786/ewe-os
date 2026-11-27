@@ -9,6 +9,7 @@
   import { listen } from "@tauri-apps/api/event";
   import { choices, step, visibleSteps, indexOf, langData } from "../state.js";
   import { layoutStrings, imePackages } from "../lang.js";
+  import { followTail } from "../follow.js";
 
   let log = [];
   let phase = "starting";
@@ -120,7 +121,9 @@
   </p>
 {/if}
 
-<div class="h-72 max-w-2xl overflow-y-auto rounded-xl border border-zinc-800 bg-black/40 p-3 font-mono text-xs text-zinc-400">
+<!-- the log follows its last line, like a terminal (lib/follow.js): it used to
+     sit on its first lines while ten minutes of install went by below them -->
+<div use:followTail class="h-72 max-w-2xl overflow-y-auto rounded-xl border border-zinc-800 bg-black/40 p-3 font-mono text-xs text-zinc-400">
   {#each log as l}<div>{l}</div>{/each}
 </div>
 

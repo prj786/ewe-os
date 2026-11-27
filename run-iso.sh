@@ -1,25 +1,29 @@
 #!/usr/bin/env bash
-# Boot the newest built ISO in QEMU/KVM (UEFI) — a throwaway test VM.
-# 4G RAM + virtio-gpu is enough for the live session; nothing is persisted.
+# Boot the newest built ISO (testing/*.iso, out/*.iso) in a QEMU/KVM window,
+# with a blank target disk, so "Install ewe" has something to install onto.
+#
+#   ./run-iso.sh             UEFI, a window with sound      (vm.sh up --gui)
+#   ./run-iso.sh --bios      legacy boot, the syslinux path — docs/TESTING.md's
+#                            second row of the boot matrix
+#   ./run-iso.sh --video     the 1920x1080 capture VM       (docs/RECORDING.md)
+#   ./run-iso.sh … <iso>     that image instead of the newest
+#
+# A front for scripts/vm.sh, which holds the one machine definition (this
+# script used to carry its own: no disk — the installer's Disk screen was
+# empty — and no UEFI variables). The VM runs in the background:
+# `scripts/vm.sh down` stops it, `scripts/vm.sh reboot-disk --gui` boots what
+# was installed. EWE_VM_DIR is where its disk lives (default /tmp/ewe-vm —
+# usually memory; give it a real folder before installing). vm.sh says which
+# QEMU packages are missing when this machine cannot open a window.
 set -euo pipefail
 cd "$(dirname "$0")"
 
-iso="$(ls -t out/*.iso 2>/dev/null | head -1)"
-[ -n "$iso" ] || { echo "xx no ISO in out/ — run build.sh first." >&2; exit 1; }
-
-# --bios: legacy boot (syslinux path) instead of UEFI — docs/TESTING.md's
-# second row of the boot matrix.
-firmware=()
-if [ "${1:-}" != "--bios" ]; then
-    ovmf=/usr/share/edk2/x64/OVMF_CODE.4m.fd
-    [ -r "$ovmf" ] || ovmf=/usr/share/edk2-ovmf/x64/OVMF_CODE.fd
-    firmware=(-drive "if=pflash,format=raw,readonly=on,file=$ovmf")
-fi
-
-exec qemu-system-x86_64 \
-    -enable-kvm -m 4G -smp 4 -cpu host \
-    "${firmware[@]}" \
-    -device virtio-gpu-pci -display gtk,gl=on \
-    -device virtio-net-pci,netdev=n0 -netdev user,id=n0 \
-    -audiodev pipewire,id=snd0 -device intel-hda -device hda-output,audiodev=snd0 \
-    -cdrom "$iso"
+mode=(--gui)
+rest=()
+for a in "$@"; do
+    case "$a" in
+        --video|--vnc) mode=("$a") ;;
+        *) rest+=("$a") ;;
+    esac
+done
+exec scripts/vm.sh up "${mode[@]}" "${rest[@]}"

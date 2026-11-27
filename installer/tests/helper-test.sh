@@ -48,6 +48,22 @@ yes valid_pkg libreoffice-fresh
 no  valid_pkg -rf
 no  valid_pkg 'a b'
 
+# what pacstrap installs: the fsck helpers for what the installer formats
+# (without fsck.btrfs every initramfs build on a btrfs root ends in an error)
+has() { case " $(base_packages "$1" | tr '\n' ' ') " in *" $2 "*) return 0 ;; esac; return 1; }
+yes has btrfs base
+yes has btrfs linux
+yes has btrfs linux-firmware
+yes has btrfs sudo
+yes has btrfs dosfstools
+yes has btrfs btrfs-progs
+yes has ext4 dosfstools
+no  has ext4 btrfs-progs
+no  has "" btrfs-progs
+check_n() { if [ "$(base_packages "$1" | wc -l)" = "$2" ]; then ok "base_packages '$1': $2 names, one per line"; else bad "base_packages '$1' prints $(base_packages "$1" | wc -l) lines, wanted $2"; fi; }
+check_n btrfs 6
+check_n ext4 5
+
 # a fake target: systemd's map + a few kbd keymaps
 MNT="$(mktemp -d)"
 trap 'rm -rf "$MNT"' EXIT
@@ -75,8 +91,11 @@ expect ge "" us             # nothing Latin at all: US English
 expect fr "" us             # no keymap on this target: US English
 expect ru,de "" de
 
-# the greeter wrapper's reading of localectl's X11 file (ewe-install, 2a)
-snip="$(sed -n "/^greeter_kb=\"\$(cat <<'KB'/,/^KB\$/p" "$here/../iso/airootfs/usr/local/bin/ewe-install" | sed '1d;$d')"
+# the greeter wrapper's reading of localectl's X11 file: the block
+# ewe-install's setup_greeter splices into a wrapper that has none (an ewe
+# payload up to 0.50.1; later ones carry their own, tested in the ewe repo)
+snip="$(sed -n "/^[[:space:]]*greeter_kb=\"\$(cat <<'KB'/,/^KB\$/p" "$here/../iso/airootfs/usr/local/bin/ewe-install" | sed '1d;$d')"
+if [ -n "$snip" ]; then ok "found the keyboard block in ewe-install"; else bad "the keyboard block is not where this test looks for it"; fi
 conf="$MNT/etc/X11/xorg.conf.d/00-keyboard.conf"
 install -d "$(dirname "$conf")"
 printf 'Section "InputClass"\n        Identifier "system-keyboard"\n        Option "XkbLayout" "us,ge"\n        Option "XkbVariant" ",qwerty"\nEndSection\n' > "$conf"
