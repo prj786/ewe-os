@@ -43,6 +43,8 @@ installer/tests/helper-test.sh
 node installer/tests/follow-test.mjs
 # every plugin of a payload has the DE's glyph
 node installer/tests/glyphs-test.mjs <ewe>/plugins
+# ewe's own opt-in apps: offered once
+node installer/tests/firstparty-test.mjs <ewe>/plugins
 # the login screen ewe-install lays down, per payload
 installer/tests/greeter-test.sh <ewe package or tree> …
 # the installer builds; Komble's curated list is the current one
@@ -125,6 +127,10 @@ as the run's artifact (`gh run download <run> -n ewe-test-iso -D testing/`)
       each with its own glyph (Window switcher: a window, not the puzzle
       piece; Clipboard & emoji: a clipboard, not scissors);
       pick 2–3 (say the dock, clipboard, music); the Summary names them
+- [ ] Apps opens with *From ewe*: ewe Mobile, unchecked — and no ewe Safe
+      there (the Plugins screen offers it). Picked, the Summary lists ewe
+      Mobile with the apps and `pacman -Q ewe-mobile` answers on the
+      installed disk
 - [ ] the Install screen's log follows its last line; scrolled up, it stays
       put; scrolled back to the end, it follows again
 - [ ] the install log has no `error:` line and no "errors were encountered

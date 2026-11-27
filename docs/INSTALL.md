@@ -107,7 +107,10 @@ button on the Summary screen.
    Tick or untick anything (the Dock row says *Recommended if you like a
    dock*). You can add or remove these any time in **Komble → Plugins**, so
    an empty pick is a fine answer.
-9. **Apps** — optional: Komble's popular apps as tiles (browsers, chat,
+9. **Apps** — optional. First, *From ewe*: ewe's own apps that are not
+   installed unless you ask — **ewe Mobile** (your phone on this computer).
+   ewe Safe is on the Plugins screen, as the plugin that brings it. Then
+   Komble's popular apps as tiles (browsers, chat,
    music, video, office, games …). The ones from Arch's repositories
    install with the system. The ones marked **Komble** come from the AUR or
    as AppImages: the installer never builds those — they wait in Komble

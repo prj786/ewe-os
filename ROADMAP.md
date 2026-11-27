@@ -445,6 +445,9 @@ tested until the QEMU pass at the end is ticked.
 - [x] **`btrfs-progs` and `dosfstools` come with the base system**: without
       `fsck.btrfs` mkinitcpio ended every build with an error — in the
       install log and at every kernel update afterwards
+- [x] **ewe Mobile can be picked while installing**: the Apps screen opens
+      with *From ewe* (unchecked; ewe Safe stays on the Plugins screen, as
+      the plugin that installs it — nothing is offered twice)
 - [x] `scripts/vm.sh`: `--video` (a 1920x1080 window with guest GL,
       `--software` without), `EWE_VM_MEM` / `SMP` / `DISK_SIZE` / `RES`,
       `save` / `restore` for retakes, plain words when QEMU's modules are
