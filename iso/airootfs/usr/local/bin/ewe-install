@@ -327,7 +327,7 @@ fi
 if [ "$MODE" = guided ]; then
     cat <<'EOF'
 
-  ewe — guided install (alpha)
+  ewe — guided install (beta)
   ────────────────────────────
   archinstall runs first for the base system. Inside it:
     · partition/format as you like
