@@ -80,6 +80,25 @@ console_keymap() {
     printf 'us\n'
 }
 
+# base_packages <root fstype> → what pacstrap installs, one name per line.
+#   sudo         the `user` verb makes the first account an administrator
+#                through /etc/sudoers.d/wheel, and base has no sudo — GUI
+#                installs shipped without it until the 0.17 QEMU pass found
+#                "command not found: sudo"
+#   dosfstools   fsck.vfat for the ESP, which fstab asks systemd to check
+#   btrfs-progs  on btrfs (what the installer makes): the `btrfs` tool itself
+#                — subvolumes, snapshots, scrub — and fsck.btrfs. Without the
+#                latter mkinitcpio's fsck hook counts an error on EVERY
+#                initramfs build ("errors were encountered during the build",
+#                and pacman's "error: command failed to execute correctly"):
+#                in the install log, and at every kernel update afterwards
+#                (0.18; measured on a btrfs root without it — the build
+#                exits 1 without fsck.btrfs, 0 with it)
+base_packages() {
+    printf '%s\n' base linux linux-firmware sudo dosfstools
+    case "${1:-}" in btrfs) printf '%s\n' btrfs-progs ;; esac
+}
+
 # tests source the functions above (`EWE_HELPER_LIB=1 . ewe-install-helper`,
 # tests/helper-test.sh); pkexec clears the environment, so a real run never
 # takes this branch
@@ -150,13 +169,17 @@ mkfs)
 pacstrap)
     mountpoint -q "$MNT" || die "target not mounted"
     say pacstrap "installing the base system (this is the long one)"
+    mapfile -t base < <(base_packages "$(findmnt -n -o FSTYPE "$MNT")")
+    # The console keymap file, before the first initramfs is built in there:
+    # without one mkinitcpio's sd-vconsole hook puts a warning in the middle
+    # of the log. `setkeymap` writes the chosen keyboard into the same file
+    # right after; no package owns it.
+    [ -s "$MNT/etc/vconsole.conf" ] \
+        || { install -d "$MNT/etc" && printf 'KEYMAP=us\n' > "$MNT/etc/vconsole.conf"; }
     # `if !` keeps errexit from killing us silently: the error line below is
     # what the installer shows (stdout is the progress stream; stderr is
     # read too, but this one must reach the log).
-    # sudo: the `user` verb makes the first account an administrator through
-    # /etc/sudoers.d/wheel, and base has no sudo — GUI installs shipped
-    # without it until the 0.17 QEMU pass found "command not found: sudo"
-    if ! pacstrap "$MNT" base linux linux-firmware sudo "$NO_STALL" 2>&1 | while IFS= read -r l; do
+    if ! pacstrap "$MNT" "${base[@]}" "$NO_STALL" 2>&1 | while IFS= read -r l; do
         printf '{"phase":"pacstrap","log":%s}\n' "$(printf '%s' "$l" | python3 -c 'import json,sys;print(json.dumps(sys.stdin.read()[:160]))')"
     done; then
         printf '{"phase":"pacstrap","msg":"pacstrap failed — the base system could not be downloaded; check the connection and retry"}\n'

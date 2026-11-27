@@ -48,6 +48,22 @@ yes valid_pkg libreoffice-fresh
 no  valid_pkg -rf
 no  valid_pkg 'a b'
 
+# what pacstrap installs: the fsck helpers for what the installer formats
+# (without fsck.btrfs every initramfs build on a btrfs root ends in an error)
+has() { case " $(base_packages "$1" | tr '\n' ' ') " in *" $2 "*) return 0 ;; esac; return 1; }
+yes has btrfs base
+yes has btrfs linux
+yes has btrfs linux-firmware
+yes has btrfs sudo
+yes has btrfs dosfstools
+yes has btrfs btrfs-progs
+yes has ext4 dosfstools
+no  has ext4 btrfs-progs
+no  has "" btrfs-progs
+check_n() { if [ "$(base_packages "$1" | wc -l)" = "$2" ]; then ok "base_packages '$1': $2 names, one per line"; else bad "base_packages '$1' prints $(base_packages "$1" | wc -l) lines, wanted $2"; fi; }
+check_n btrfs 6
+check_n ext4 5
+
 # a fake target: systemd's map + a few kbd keymaps
 MNT="$(mktemp -d)"
 trap 'rm -rf "$MNT"' EXIT
